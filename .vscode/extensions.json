@@ -1,0 +1,11 @@
+{
+    "recommendations": [
+        "alchemic-raker.alchemy65",
+        "llvm-vs-code-extensions.vscode-clangd",
+        "ms-vscode.cmake-tools",
+        "pucelle.run-on-save"
+    ],
+    "unwantedRecommendations": [
+        "ms-vscode.cpp-tools"
+    ]
+}
