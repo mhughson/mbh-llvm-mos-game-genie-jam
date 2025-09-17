@@ -44,7 +44,7 @@ Instead, we are pretending to make our own custom games that run *on* the Game G
 
 For more details see <https://forums.nesdev.org/viewtopic.php?p=304053#p304053>
 
-## What is LLVM-MOS
+## What is LLVM-MOS?
 
 LLVM-MOS is a new backend for the powerful LLVM compiler suite that enables it to target the 6502 CPU
 used in the NES.
@@ -52,9 +52,21 @@ It includes a full C and C++ compiler, with parts of the C++ standard library av
 things that are compile-time only since the NES doesn't have a lot of space on it.)
 It's quite powerful, but also quite new, so not as many people have experience with it.
 
-## What is LLVM-MOS-SDK
+## What is LLVM-MOS-SDK?
 
 LLVM-MOS-SDK is a prepackaged build of the LLVM-MOS tools with many helpful examples and targets to make
 building for the NES much easier.
 While not strictly required, without it, you'd end up needing to bring your own linker scripts and so much more
 just to get started.
+
+## What is the license used for this repo?
+
+This repo is under the Apache 2 license with LLVM Exception to keep consistency with the LLVM-MOS-SDK.
+I'm not a lawyer, but this should mean that you are fine to use the code without
+informing the users that you are using it. <https://merlijn.sebrechts.be/blog/what-is-the-apache-2-llvm-exception/>
+
+CC65 has its own license for the tooling, but we aren't using their standard library, so that shouldn't impact your
+license for your final binary.
+
+On the other hand, NESLIB and NESDOUG libraries are MIT so you need to keep the license
+around for that still.
