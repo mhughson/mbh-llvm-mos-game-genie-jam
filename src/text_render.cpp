@@ -29,9 +29,9 @@ extern volatile __zeropage uint8_t VRAM_INDEX;
 extern volatile __zeropage uint8_t NAME_UPD_ENABLE;
 
 extern "C" void render_string(Nametable nmt, uint8_t x, uint8_t y, const Letter str[]) {
-    while (*str != Letter::NUL) {
-        auto letter = *str;
-        str++;
+    uint8_t len = (uint8_t)str[0];
+    for (uint8_t i = 1; i < len; i++) {
+        auto letter = str[i];
         if (!SKIP_DRAWING_SPACE || letter != Letter::SPACE) {
             const auto t = all_letters[letter].get();
             draw_metatile_2_3(nmt, x, y, &t);
