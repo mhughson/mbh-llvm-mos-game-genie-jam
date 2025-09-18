@@ -35,6 +35,11 @@ But if you don't, here's my recommendations.
 * Push `Ctrl+Shift+P` to open the VSCode command window and type `CMake: Configure` and choose the `default` preset
 * Push `Ctrl+Shift+P` again to open the VSCode command window and this time type `CMake: Build` to build the `build/gg-llvm-mos-sample.nes` file
 * From here on out, whenever you change a source file and save, it should automatically rebuild the application.
+* **NEW** - To run your NES rom after a successful build follow these steps:
+  * Push `Ctrl+Shift+P` and run the command `CMake: Edit CMake Cache (UI)`
+  * Search for `LAUNCH` in the options
+  * Turn on (and save!) `LAUNCH_NES_FILE_AFTER_BUILD` in order to launch the NES game after compilation
+  * If your emulator isn't configured as the default application to launch NES games, then you can provide a path with `LAUNCH_NES_FILE_EMULATOR_PATH`
 
 ## Questions no one asked but I wanted to answer anyway
 
