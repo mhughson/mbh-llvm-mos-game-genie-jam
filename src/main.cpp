@@ -65,18 +65,43 @@ void update_scrolling_view() {
     set_scroll_y(scroll_y);
 }
 
+#define VIEW_FADE_FRAMES 4
 // Handles checking if select was just pressed this frame and switches game modes
 void update_view() {
+
+    bool did_fade = false;
+
     // Using `pad_new` lets us check only which buttons are newly pressed this frame.
     auto input = get_pad_new(0);
     // If we just pushed select, then switch to the other "game mode"
     if (input & PAD_SELECT) {
         show_left_nametable = !show_left_nametable;
+
+        delay(VIEW_FADE_FRAMES);
+        pal_bright(3);
+        delay(VIEW_FADE_FRAMES);
+        pal_bright(2);
+        delay(VIEW_FADE_FRAMES);
+        pal_bright(1);
+        delay(VIEW_FADE_FRAMES);
+        pal_bright(0);
+
+        did_fade = true;
     }
     if (show_left_nametable) {
         update_text_view();
     } else {
         update_scrolling_view();
+    }
+
+    if (did_fade) {
+        pal_bright(1);
+        delay(VIEW_FADE_FRAMES);
+        pal_bright(2);
+        delay(VIEW_FADE_FRAMES);
+        pal_bright(3);
+        delay(VIEW_FADE_FRAMES);
+        pal_bright(4);
     }
 }
 
