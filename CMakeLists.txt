@@ -33,6 +33,7 @@ target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
     -Wall -Wextra -Werror  # Compiler's got your back
     -Wno-error=unused-command-line-argument # But compiling asm files *will* add a lot of unused cli args so ignore these
     -Wno-c23-extensions # just let me use #embed pls and thx u
+    -Wno-c99-extensions # and array designators!
 )
 
 target_link_options(${CMAKE_PROJECT_NAME} PRIVATE

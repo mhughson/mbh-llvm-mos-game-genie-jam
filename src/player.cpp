@@ -102,7 +102,7 @@ constexpr fs8_8 PLAYER_GRAVITY_SPEED_LIMIT = 4.0_s8_8;
 constexpr uint8_t PLAYER_MIN_AIR_TIME = 5; // frames
 constexpr uint8_t PLAYER_MAX_AIR_TIME = 12; // frames
 
-void update_player_position() {
+extern "C" void update_player_position() {
     // Get the latest input from the controller without polling them again
     auto input = pad_state(0);
 

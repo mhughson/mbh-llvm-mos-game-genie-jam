@@ -1,0 +1,123 @@
+#pragma once
+
+#include <iso646.h>
+#include <stdint.h>
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * @brief List of possible letters in our custom font. If you would like to update this list,
+ *        then add a new character, and update the `font.inc` to add your character at the same location
+ *        in the list.
+ */
+enum Letter {
+    NUL = 0x0,
+    _0,
+    _1,
+    _2,
+    _3,
+    _4,
+    _5,
+    _6,
+    _7,
+    _8,
+    _9,
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    H,
+    I,
+    J,
+    K,
+    L,
+    M,
+    N,
+    O,
+    P,
+    Q,
+    R,
+    S,
+    T,
+    U,
+    V,
+    W,
+    X,
+    Y,
+    Z,
+    SPACE,
+    COUNT,
+};
+
+
+/**
+ * @brief Draw a single letter to the VRAM_BUFFER. This can be used with rendering ON since it buffers the writes.
+ *        A letter is a 2x3 metatile representing a 4x6 pixel image, with the custom font defined in `font.inc`
+ *
+ * NOTICE: This function does NOT handle attributes! You will need to settle that outside of this.
+ * NOTICE: This function will NOT check to see if it overflows the VRAM_BUFFER!
+ * 
+ * @param X - position from 0 to 31 to start drawing the string at
+ * @param Y - position from 0 to 26 to start drawing the string at
+ * @param str - Single letter to render in a 2x4 block of tiles
+ */
+void draw_letter(uint8_t x, uint8_t y, Letter letter);
+
+
+/**
+ * @brief Draw all letters from the string into the provided coordinate.
+ *        If the next X position would be off the screen, this function will move to the next line.
+ *        It will not break up words or such, so you should probably reflow text yourself if you need that.
+ *
+ * NOTICE: This function does NOT handle attributes! You will need to settle that outside of this.
+ * NOTICE: This function will prevent itself from overloading the VRAM buffer, so it may take more
+ *         than a frame to complete if the buffer fills up.
+ * 
+ * @param X - position from 0 to 31 to start drawing the string at
+ * @param Y - position from 0 to 26 to start drawing the string at
+ * @param str - List of letters to render starting at that position.
+ */
+void render_string(uint8_t x, uint8_t y, const Letter letter[]);
+
+#ifdef __cplusplus
+}
+#endif
+
+#ifdef __cplusplus
+template<size_t N>
+struct LetterArray
+{
+    Letter out[N]{};
+ 
+    consteval LetterArray(char const(&text)[N])
+    {
+        for (size_t i = 0; i < N; i++) {
+            char c = text[i];
+            Letter let = Letter::NUL;
+            if (c >= '0' && c <= '9') {
+                let = (Letter) (c - '0' + Letter::_0);
+            } else if (c >= 'A' && c <= 'Z') {
+                let = (Letter) (c - 'A' + Letter::A);
+            } else if (c >= 'a' && c <= 'z') {
+                let = (Letter) (c - 'a' + Letter::A);
+            } else if (c == ' ') {
+                let = Letter::SPACE;
+            } else if (c == '\0') {
+                let = Letter::NUL;
+            }
+            out[i] = let;
+        }
+    }
+};
+
+template<LetterArray A>
+consteval auto operator""_l() {
+    return A.out;
+}
+#endif

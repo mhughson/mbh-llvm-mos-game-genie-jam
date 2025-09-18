@@ -10,6 +10,7 @@
 
 // Include our own player update function for the movable sprite.
 #include "player.hpp"
+#include "text_render.hpp"
 
 // Include a basic nametable thats RLE compressed for the demo
 const unsigned char nametable[] = {
@@ -29,16 +30,24 @@ static const uint8_t default_palette[] = {
     0x0f, 0x0f, 0x0f, 0x0f,
     0x0f, 0x0f, 0x0f, 0x0f,
 };
+
 // Start the scroll position at 0
 static uint8_t scroll_y = 0;
 static int8_t direction = 1;
+static uint8_t scroll_frame_count = 0;
+static bool show_left_nametable = true;
 
-void update_scroll_position() {
+void update_text_view() {
+    set_scroll_x(0x00);
+    set_scroll_y(0x00);
+}
+
+void update_scrolling_view() {
     // Update the scroll each frame to bounce the screen
-    auto frame = get_frame_count();
+    scroll_frame_count = (scroll_frame_count + 1) & 0x1f;
 
     // every 32 frames, switch which direction to move the words
-    direction = frame & 0x1f ? direction : -direction;
+    direction = scroll_frame_count != 0 ? direction : -direction;
     scroll_y += direction;
     // Be careful when scrolling in the Y direction!
     // Setting the y scroll between 240-255 will try to render the attribute table.
@@ -50,7 +59,20 @@ void update_scroll_position() {
         // else we are going down into 255, so skip to 239
         scroll_y = direction > 0 ? 0 : 239;
     }
+    set_scroll_x(0x100);
     set_scroll_y(scroll_y);
+}
+
+void update_view() {
+    auto input = get_pad_new(0);
+    if (input & PAD_SELECT) {
+        show_left_nametable = !show_left_nametable;
+    }
+    if (show_left_nametable) {
+        update_text_view();
+    } else {
+        update_scrolling_view();
+    }
 }
 
 // We defined this data in ca65 as an example of how to reference labels defined in asm in C
@@ -58,7 +80,12 @@ extern const uint8_t example_ca65_data[];
 // This is a zeropage variable defined in ca65
 extern uint8_t __zeropage var_defined_in_ca65;
 
+
 int main() {
+    
+    // Tell NMI to update graphics using the VRAM_BUFFER provided by nesdoug library
+    set_vram_buffer();
+    
     // Start off by disabling the PPU rendering, allowing us to upload data safely to the nametable (background)
     ppu_off();
 
@@ -74,21 +101,25 @@ int main() {
 
     // Set the scroll position on the screen to 0, 0
     scroll(0, 0);
-
-    // And then draw into the top left nametable.
-    vram_adr(0x2000);
-
-    // Write a RLE compressed nametable to the screen. You can generate NESLIB compatible RLE
-    // compressed nametables with a tool like NEXXT
-    vram_unrle(nametable);
     
     // And then clear out the other nametable as well.
     vram_adr(0x2400);
-    vram_fill(0x00, 0x400);
+    // Write a RLE compressed nametable to the screen. You can generate NESLIB compatible RLE
+    // compressed nametables with a tool like NEXXT
+    vram_unrle(nametable);
+
+    // Example string rendering using the custom string conversion.
+    // The `_l` is a user defined literal, which converts from ASCII to our custom character map at compile time
+    // ie: in the generated code "THE QUICK" will be compiled as {Letter::T, Letter::H, ... Letter::NUL}
+    render_string(1, 1, "THE QUICK"_l);
+    render_string(1, 4, "BROWN FOX"_l);
+    render_string(1, 7, "JUMPS OVER"_l);
+    render_string(1, 10, "THE LAZY DOG"_l);
+    render_string(1, 14, "PUSH SELECT"_l);
+    render_string(1, 17, "TO SWITCH VIEW"_l);
     
     // Turn on the screen, showing both the background and sprites
     ppu_on_all();
-
 
     // Now time to start the main game loop
     while (true) {
@@ -100,7 +131,7 @@ int main() {
         // Update the scroll position for the screen. Typically if you are following a character
         // then this would happen *after* the character moves.
         // NOTE: llvm-mos is very aggressive at inlining, so don't stress the small details too much.
-        update_scroll_position();
+        update_view();
 
         update_player_position();
         
