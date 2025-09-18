@@ -37,11 +37,13 @@ static int8_t direction = 1;
 static uint8_t scroll_frame_count = 0;
 static bool show_left_nametable = true;
 
+// Simple view with just some text rendered to it for demonstration.
 void update_text_view() {
     set_scroll_x(0x00);
     set_scroll_y(0x00);
 }
 
+// Background showing how to change the scroll every frame or so
 void update_scrolling_view() {
     // Update the scroll each frame to bounce the screen
     scroll_frame_count = (scroll_frame_count + 1) & 0x1f;
@@ -63,8 +65,11 @@ void update_scrolling_view() {
     set_scroll_y(scroll_y);
 }
 
+// Handles checking if select was just pressed this frame and switches game modes
 void update_view() {
+    // Using `pad_new` lets us check only which buttons are newly pressed this frame.
     auto input = get_pad_new(0);
+    // If we just pushed select, then switch to the other "game mode"
     if (input & PAD_SELECT) {
         show_left_nametable = !show_left_nametable;
     }
@@ -103,7 +108,7 @@ int main() {
     scroll(0, 0);
     
     // And then clear out the other nametable as well.
-    vram_adr(0x2400);
+    vram_adr(NAMETABLE_B);
     // Write a RLE compressed nametable to the screen. You can generate NESLIB compatible RLE
     // compressed nametables with a tool like NEXXT
     vram_unrle(nametable);
@@ -111,12 +116,12 @@ int main() {
     // Example string rendering using the custom string conversion.
     // The `_l` is a user defined literal, which converts from ASCII to our custom character map at compile time
     // ie: in the generated code "THE QUICK" will be compiled as {Letter::T, Letter::H, ... Letter::NUL}
-    render_string(1, 1, "THE QUICK"_l);
-    render_string(1, 4, "BROWN FOX"_l);
-    render_string(1, 7, "JUMPS OVER"_l);
-    render_string(1, 10, "THE LAZY DOG"_l);
-    render_string(1, 14, "PUSH SELECT"_l);
-    render_string(1, 17, "TO SWITCH VIEW"_l);
+    render_string(Nametable::A, 1, 1, "THE QUICK"_l);
+    render_string(Nametable::A, 1, 4, "BROWN FOX"_l);
+    render_string(Nametable::A, 1, 7, "JUMPS OVER"_l);
+    render_string(Nametable::A, 1, 10, "THE LAZY DOG"_l);
+    render_string(Nametable::A, 1, 14, "PUSH SELECT"_l);
+    render_string(Nametable::A, 1, 17, "TO SWITCH VIEW"_l);
     
     // Turn on the screen, showing both the background and sprites
     ppu_on_all();
@@ -128,9 +133,9 @@ int main() {
         // Once a frame, clear the sprites out so that we don't have leftover sprites.
         oam_clear();
 
-        // Update the scroll position for the screen. Typically if you are following a character
-        // then this would happen *after* the character moves.
-        // NOTE: llvm-mos is very aggressive at inlining, so don't stress the small details too much.
+        // Run the main code for processing our backgrounds.
+        // NOTE: llvm-mos is very aggressive at inlining, so don't stress the small things
+        // like function call overhead too much.
         update_view();
 
         update_player_position();

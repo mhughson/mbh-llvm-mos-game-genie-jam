@@ -1,5 +1,6 @@
 #pragma once
 
+#include "metatile.hpp"
 #include <stdint.h>
 #include <stddef.h>
 
@@ -76,9 +77,9 @@ enum Letter {
  * 
  * @param X - position from 0 to 31 to start drawing the string at
  * @param Y - position from 0 to 26 to start drawing the string at
- * @param str - Single letter to render in a 2x4 block of tiles
+ * @param str - Single letter to render in a 2x3 block of tiles
  */
-void draw_letter(uint8_t x, uint8_t y, Letter letter);
+void draw_letter(Nametable nmt, uint8_t x, uint8_t y, Letter letter);
 
 
 /**
@@ -94,7 +95,7 @@ void draw_letter(uint8_t x, uint8_t y, Letter letter);
  * @param Y - position from 0 to 26 to start drawing the string at
  * @param str - List of letters to render starting at that position.
  */
-void render_string(uint8_t x, uint8_t y, const Letter letter[]);
+void render_string(Nametable nmt, uint8_t x, uint8_t y, const Letter letter[]);
 
 #ifdef __cplusplus
 }

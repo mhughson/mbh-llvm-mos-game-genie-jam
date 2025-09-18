@@ -11,6 +11,13 @@ extern "C" {
 #define LEFT_TILE(x) (((x) >> 4) & 0xf)
 #define RIGHT_TILE(x) ((x) & 0xf)
 
+enum class Nametable : uint8_t {
+    A = 0x00,
+    B = 0x04,
+    C = 0x08,
+    D = 0x0c,
+};
+
 struct Metatile_2_2 {
     uint8_t top;
     uint8_t bot;
@@ -23,15 +30,23 @@ struct Metatile_2_3 {
 };
 
 struct Metatile_4_4 {
-    uint8_t topleft_top;
-    uint8_t topleft_bot;
-    uint8_t botleft_top;
-    uint8_t botleft_bot;
-    uint8_t topright_top;
-    uint8_t topright_bot;
-    uint8_t botright_top;
-    uint8_t botright_bot;
+    Metatile_2_2 topleft;
+    Metatile_2_2 botleft;
+    Metatile_2_2 topright;
+    Metatile_2_2 botright;
 };
+
+/**
+ * @brief Metatile draw routines - buffers a draw to the VRAM_BUF for metatiles.
+ *
+ * @param nmt - Which Nametable to draw the metatile in
+ * @param x   - X coord between 0 - 31
+ * @param y   - Y coord between 0 - 29
+ * @param tile - Pointer to the metatile to draw
+ */
+void draw_metatile_2_2(Nametable nmt, uint8_t x, uint8_t y, const Metatile_2_2* tile);
+void draw_metatile_2_3(Nametable nmt, uint8_t x, uint8_t y, const Metatile_2_3* tile);
+void draw_metatile_4_4(Nametable nmt, uint8_t x, uint8_t y, const Metatile_4_4* tile);
 
 consteval uint8_t get_tile_for_bits(uint8_t bits) {
     const uint8_t bits_to_tile[] = {
@@ -54,6 +69,12 @@ consteval uint8_t get_tile_for_bits(uint8_t bits) {
         0xf, // 0b1111
     };
     return bits_to_tile[bits];
+}
+
+consteval uint8_t combine_bits_to_tile(uint64_t bits, uint8_t offset) {
+    constexpr uint8_t stride = 8;
+    return (uint8_t)((get_tile_for_bits((((bits >> (offset + 2 + stride)) & 0x3) << 2) | ((bits >> (offset + 2)) & 0x3)) << 4)
+                    | get_tile_for_bits((((bits >> (offset + stride)) & 0x3) << 2) | ((bits >> (offset)) & 0x3)));
 }
 
 consteval Metatile_4_4 parse_string_mt_4_4(const char* text, size_t len) {
@@ -82,43 +103,44 @@ consteval Metatile_4_4 parse_string_mt_4_4(const char* text, size_t len) {
         while (c != '\n' && i < len) c = text[i++];
     }
     // Screaming internally.
-    constexpr uint8_t stride = 8;
+    Metatile_2_2 topleft {
+        .top = combine_bits_to_tile(bits, 48 + 4),
+        .bot = combine_bits_to_tile(bits, 32 + 4),
+    };
+    Metatile_2_2 topright {
+        .top = combine_bits_to_tile(bits, 48),
+        .bot = combine_bits_to_tile(bits, 32),
+    };
+    Metatile_2_2 botleft {
+        .top = combine_bits_to_tile(bits, 16 + 4),
+        .bot = combine_bits_to_tile(bits, 0 + 4),
+    };
+    Metatile_2_2 botright {
+        .top = combine_bits_to_tile(bits, 16),
+        .bot = combine_bits_to_tile(bits, 0),
+    };
+
     return {
-        .topleft_top  = (uint8_t)((get_tile_for_bits((((bits >> (54 + stride)) & 0x3) << 2) | ((bits >> (54)) & 0x3)) << 4)
-                                 | get_tile_for_bits((((bits >> (52 + stride)) & 0x3) << 2) | ((bits >> (52)) & 0x3))),
-        .topleft_bot  = (uint8_t)((get_tile_for_bits((((bits >> (38 + stride)) & 0x3) << 2) | ((bits >> (38)) & 0x3)) << 4)
-                                 | get_tile_for_bits((((bits >> (36 + stride)) & 0x3) << 2) | ((bits >> (36)) & 0x3))),
-
-        .botleft_top  = (uint8_t)((get_tile_for_bits((((bits >> (22 + stride)) & 0x3) << 2) | ((bits >> (22)) & 0x3)) << 4)
-                                 | get_tile_for_bits((((bits >> (20 + stride)) & 0x3) << 2) | ((bits >> (20)) & 0x3))),
-        .botleft_bot  = (uint8_t)((get_tile_for_bits((((bits >> ( 6 + stride)) & 0x3) << 2) | ((bits >> ( 6)) & 0x3)) << 4)
-                                 | get_tile_for_bits((((bits >> ( 4 + stride)) & 0x3) << 2) | ((bits >> ( 4)) & 0x3))),
-
-        .topright_top = (uint8_t)((get_tile_for_bits((((bits >> (50 + stride)) & 0x3) << 2) | ((bits >> (50)) & 0x3)) << 4)
-                                 | get_tile_for_bits((((bits >> (48 + stride)) & 0x3) << 2) | ((bits >> (48)) & 0x3))),
-        .topright_bot = (uint8_t)((get_tile_for_bits((((bits >> (34 + stride)) & 0x3) << 2) | ((bits >> (34)) & 0x3)) << 4)
-                                 | get_tile_for_bits((((bits >> (32 + stride)) & 0x3) << 2) | ((bits >> (32)) & 0x3))),
-
-        .botright_top = (uint8_t)((get_tile_for_bits((((bits >> (18 + stride)) & 0x3) << 2) | ((bits >> (18)) & 0x3)) << 4)
-                                 | get_tile_for_bits((((bits >> (16 + stride)) & 0x3) << 2) | ((bits >> (16)) & 0x3))),
-        .botright_bot = (uint8_t)((get_tile_for_bits((((bits >> ( 2 + stride)) & 0x3) << 2) | ((bits >> ( 2)) & 0x3)) << 4)
-                                 | get_tile_for_bits((((bits >> ( 0 + stride)) & 0x3) << 2) | ((bits >> ( 0)) & 0x3))),
+        .topleft = topleft,
+        .topright = topright,
+        .botleft = botleft,
+        .botright = botright,
     };
 }
 consteval Metatile_2_2 parse_string_mt_2_2(const char* text, size_t len) {
     Metatile_4_4 mt = parse_string_mt_4_4(text, len);
     return {
-        .top = mt.topleft_top,
-        .bot = mt.topleft_bot,
+        .top = mt.topleft.top,
+        .bot = mt.topleft.bot,
     };
 }
 
 consteval Metatile_2_3 parse_string_mt_2_3(const char* text, size_t len) {
     Metatile_4_4 mt = parse_string_mt_4_4(text, len);
     return {
-        .top_top = mt.topleft_top,
-        .top_bot = mt.topleft_bot,
-        .bot_top = mt.botleft_top,
+        .top_top = mt.topleft.top,
+        .top_bot = mt.topleft.bot,
+        .bot_top = mt.botleft.top,
     };
 }
 
@@ -139,8 +161,7 @@ consteval Metatile_2_3 parse_string_mt_2_3(const char* text, size_t len) {
 #include <soa-struct.inc>
 
 #define SOA_STRUCT Metatile_4_4
-#define SOA_MEMBERS MEMBER(topleft_top) MEMBER(topleft_bot) MEMBER(botleft_top) MEMBER(botleft_bot) \
-                    MEMBER(topright_top) MEMBER(topright_bot) MEMBER(botright_top) MEMBER(botright_bot)
+#define SOA_MEMBERS MEMBER(topleft) MEMBER(botleft) MEMBER(topright) MEMBER(botright)
 #include <soa-struct.inc>
 
 #include <cstdint>

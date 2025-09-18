@@ -13,6 +13,9 @@
   * Barebones CA65 asm integration example
   * Draws a simple background image to the screen (thanks Freem for the image!)
   * Mid-level platformer character controller to demonstrate input.
+  * **NEW** - Better metatile support for the Game Genie CHR
+  * **NEW** - Text rendering support using the metatiles to draw a custom 4x6 font to the screen
+  * **NEW** - Inline font declaration using strings in the source files (gets compiled away into an optimized representation!)
 
 Note: I put this together really fast so it may have bugs in it. I really only had time to test Windows as well.
 
