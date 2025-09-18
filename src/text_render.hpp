@@ -1,12 +1,23 @@
 #pragma once
 
-#include <iso646.h>
 #include <stdint.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * @brief If true, then instead of rendering the space glyph, this will just skip over space tile, saving cycles.
+ *        This does mean that you need to clear the text area before drawing text on the other hand.
+ *        If false, the space character will be rendered
+ */
+constexpr bool SKIP_DRAWING_SPACE = true;
+/**
+ * @brief If true, drawing a space uses only 1 tile width instead of two (allowing for slightly more compact horizontal lines)
+ *        If SKIP_DRAWING_SPACE = false, the full 2x3 space glyph is rendered, but the next character position starts in the middle of the space
+ */
+constexpr bool HALF_SIZE_SPACE = true;
 
 /**
  * @brief List of possible letters in our custom font. If you would like to update this list,
