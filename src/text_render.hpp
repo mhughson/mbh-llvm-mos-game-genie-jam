@@ -26,7 +26,6 @@ constexpr bool HALF_SIZE_SPACE = true;
  *        in the list.
  */
 enum Letter {
-    NUL = 0x0,
     _0,
     _1,
     _2,
@@ -109,9 +108,11 @@ struct LetterArray
  
     consteval LetterArray(char const(&text)[N])
     {
+        out[0] = (Letter)((uint8_t)N);
         for (size_t i = 0; i < N; i++) {
             char c = text[i];
-            Letter let = Letter::NUL;
+            if (c == '\0') break;
+            Letter let = Letter::SPACE;
             if (c >= '0' && c <= '9') {
                 let = (Letter) (c - '0' + Letter::_0);
             } else if (c >= 'A' && c <= 'Z') {
@@ -120,10 +121,8 @@ struct LetterArray
                 let = (Letter) (c - 'a' + Letter::A);
             } else if (c == ' ') {
                 let = Letter::SPACE;
-            } else if (c == '\0') {
-                let = Letter::NUL;
             }
-            out[i] = let;
+            out[i+1] = let;
         }
     }
 };

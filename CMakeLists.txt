@@ -5,6 +5,9 @@ set(PROJECT_NAME gg-llvm-mos-sample)
 
 set(CMAKE_EXECUTABLE_SUFFIX_CXX ".nes")
 
+set(LAUNCH_NES_FILE_AFTER_BUILD Off CACHE BOOL "Should I open the NES file after compilation is complete?")
+set(LAUNCH_NES_FILE_EMULATOR_PATH "" CACHE PATH "If provided, use this emulator to load the ROM, otherwise default to whatever the OS chooses")
+
 # Set this to Off to disable downloading the SDK for you
 option(LLVM_MOS_BOOTSTRAP_SDK "Should I download the llvm-mos SDK?" On)
 include(bootstrap-sdk)
@@ -60,3 +63,21 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     neslib
     nesdoug
 )
+
+if (LAUNCH_NES_FILE_AFTER_BUILD)
+    if (LAUNCH_NES_FILE_EMULATOR_PATH)
+        add_custom_command(
+            TARGET ${CMAKE_PROJECT_NAME}
+            POST_BUILD
+            COMMAND ${LAUNCH_NES_FILE_EMULATOR_PATH} $<TARGET_FILE:${CMAKE_PROJECT_NAME}>
+            COMMENT "Running ${CMAKE_PROJECT_NAME} after successful build"
+        )
+    else()
+        add_custom_command(
+            TARGET ${CMAKE_PROJECT_NAME}
+            POST_BUILD
+            COMMAND $<TARGET_FILE:${CMAKE_PROJECT_NAME}>
+            COMMENT "Running ${CMAKE_PROJECT_NAME} after successful build"
+        )
+    endif()
+endif()

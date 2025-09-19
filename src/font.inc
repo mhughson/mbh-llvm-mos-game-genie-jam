@@ -7,14 +7,6 @@
  * by parsing the string at compile time. Anything outside of the `|` pipe characters are unused.
  */
 
-/* NUL */ R"(
-|    |
-|    |
-|    |
-|    |
-|    |
-|    |
-)"_mt_2_3,
 /* 0 */ R"(
 | o  |
 |o o |
