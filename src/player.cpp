@@ -92,92 +92,94 @@ static Player player {
 
 // Constants for the velocity you can tweak to adjust the player physics
 // (the `_s8_8` means convert this floating point number to signed fixed point 8.8 at compile time)
-constexpr fs8_8 PLAYER_VELOCITY_PERFRAME = 0.15_s8_8;
-constexpr fs8_8 PLAYER_VELOCITY_SPEED_LIMIT = 2.5_s8_8;
+constexpr fs8_8 PLAYER_VELOCITY_PERFRAME = 1.15_s8_8;
+constexpr fs8_8 PLAYER_VELOCITY_SPEED_LIMIT = 2.0_s8_8;
 constexpr fs8_8 PLAYER_BRAKING_FORCE = 0.35_s8_8;
 
-constexpr fs8_8 PLAYER_JUMP_MOMENTUM = 3.5_s8_8;
-constexpr fs8_8 PLAYER_GRAVITY_PERFRAME = 0.40_s8_8;
-constexpr fs8_8 PLAYER_GRAVITY_SPEED_LIMIT = 4.0_s8_8;
-constexpr uint8_t PLAYER_MIN_AIR_TIME = 5; // frames
-constexpr uint8_t PLAYER_MAX_AIR_TIME = 12; // frames
+// constexpr fs8_8 PLAYER_JUMP_MOMENTUM = 3.5_s8_8;
+// constexpr fs8_8 PLAYER_GRAVITY_PERFRAME = 0.40_s8_8;
+// constexpr fs8_8 PLAYER_GRAVITY_SPEED_LIMIT = 4.0_s8_8;
+// constexpr uint8_t PLAYER_MIN_AIR_TIME = 5; // frames
+// constexpr uint8_t PLAYER_MAX_AIR_TIME = 12; // frames
 
 extern "C" void update_player_position() {
     // Get the latest input from the controller without polling them again
     auto input = pad_state(0);
+    bool move_input_pressed = false;
 
-    // And then use the input to determine which way to move the player.
-    // We increase the velocity of the player each frame until they reach the speed limit for that direction
-    if ((input & PAD_LEFT) && (player.vel_x > -PLAYER_VELOCITY_SPEED_LIMIT)) {
-        player.vel_x = player.vel_x - PLAYER_VELOCITY_PERFRAME;
-    } else if ((input & PAD_RIGHT) && (player.vel_x < PLAYER_VELOCITY_SPEED_LIMIT)) {
-        player.vel_x = player.vel_x + PLAYER_VELOCITY_PERFRAME;
-    } else {
+    // Use the input to adjust the player velocity
+    if (input & PAD_LEFT)
+    {
+        move_input_pressed = true;
+
+        if (player.vel_x > -PLAYER_VELOCITY_SPEED_LIMIT) 
+        {
+            player.vel_x = player.vel_x - PLAYER_VELOCITY_PERFRAME;        
+        }
+    }
+    if (input & PAD_RIGHT)
+    {
+        move_input_pressed = true;
+        if (player.vel_x < PLAYER_VELOCITY_SPEED_LIMIT) 
+        {
+            player.vel_x = player.vel_x + PLAYER_VELOCITY_PERFRAME;        
+        }
+    }
+    if (input & PAD_UP)
+    {
+        move_input_pressed = true;
+        if (player.vel_y > -PLAYER_VELOCITY_SPEED_LIMIT) 
+        {
+            player.vel_y = player.vel_y - PLAYER_VELOCITY_PERFRAME;        
+        }
+    }
+    if (input & PAD_DOWN)
+    {
+        move_input_pressed = true;
+        if (player.vel_y < PLAYER_VELOCITY_SPEED_LIMIT) 
+        {
+            player.vel_y = player.vel_y + PLAYER_VELOCITY_PERFRAME;        
+        }
+    }
+
+    if (!move_input_pressed)
+    {
         // Holding neither, so apply a braking force to stop the player.
         if (player.vel_x > 0) {
             auto braking_force = player.vel_x - PLAYER_BRAKING_FORCE;
             player.vel_x = MMAX(braking_force, 0);
-        } else if (player.vel_x < 0) {
+        } 
+        else if (player.vel_x < 0) {
             auto braking_force = player.vel_x + PLAYER_BRAKING_FORCE;
             player.vel_x = MMIN(braking_force, 0);
+        }
+        
+        if (player.vel_y > 0) {
+            auto braking_force = player.vel_y - PLAYER_BRAKING_FORCE;
+            player.vel_y = MMAX(braking_force, 0);
+        } else if (player.vel_y < 0) {
+            auto braking_force = player.vel_y + PLAYER_BRAKING_FORCE;
+            player.vel_y = MMIN(braking_force, 0);
         }
     }
 
     // Finally apply the velocity for the player that we calculated
     player.x = player.x + player.vel_x;
+    player.y = player.y + player.vel_y;
 
     // If the player is moving either left or right, increase the frame count
-    if (input & (PAD_LEFT | PAD_RIGHT)) {
+    if (move_input_pressed) 
+    {
         player.animation_count++;
         // and then every 15 frames switch which frame we are using.
         // the `& 1` is because we only have 2 frames of animation right now
         player.frame = player.animation_count & 0xf ? player.frame : (player.frame + 1) & 1;
-    } else {
+    } 
+    else 
+    {
         // We stopped moving, so reset the frame and animation count!
         player.frame = 0;
         player.animation_count = 0;
-    }
-
-    // Setup a jump if they push the A button and they are on the ground.
-    player.jump_timer++;
-    if (input & PAD_A && player.state == PlayerState::Grounded && player.released_jump) {
-        player.state = PlayerState::Rising;
-        // Add a burst of velocity upwards to give the jump some weight to it.
-        // While we are still rising, we don't want to apply gravity just yet.
-        player.vel_y = -PLAYER_JUMP_MOMENTUM;
-        player.jump_timer = 0;
-        player.released_jump = false;
-    }
-    if (player.state == PlayerState::Rising) {
-        if (player.jump_timer > PLAYER_MIN_AIR_TIME && player.released_jump) {
-            player.state = PlayerState::Falling;
-        } else if (player.jump_timer >= PLAYER_MAX_AIR_TIME) {
-            player.state = PlayerState::Falling;
-        }
-    } else if (player.state == PlayerState::Falling && player.vel_y < PLAYER_GRAVITY_SPEED_LIMIT) {
-        // Falling down until we reach the ground
-        // Increase the downwards velocity until we reach the max.
-        player.vel_y = player.vel_y + PLAYER_GRAVITY_PERFRAME;
-    }
-
-    // Whenever the player lets go of the jump button while rising, set the released_jump flag
-    // so that when the min jump length is finished, we can start applying gravity.
-    if ((input & PAD_A) == 0 && !player.released_jump) {
-        player.released_jump = true;
-    }
-    if (player.state != PlayerState::Grounded) {
-        // Force the arms in the air animation frame while jumping
-        player.frame = 1;
-    }
-
-    // And update the player Y position based on the calculated Y velocity
-    // But treat y=200 as the floor arbitrarily for the demo.
-    // Tile collision detection left as an exercise for the reader!
-    player.y = player.y + player.vel_y;
-    if (player.y > 200) {
-        player.y = 200;
-        player.vel_y = 0;
-        player.state = PlayerState::Grounded;
     }
 
     // Last thing to do is draw the player metasprite.

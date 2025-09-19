@@ -141,12 +141,12 @@ int main() {
     // Example string rendering using the custom string conversion.
     // The `_l` is a user defined literal, which converts from ASCII to our custom character map at compile time
     // ie: in the generated code "THE QUICK" will be compiled as {Letter::T, Letter::H, ... Letter::NUL}
-    render_string(Nametable::A, 1, 1, "THE QUICK"_l);
-    render_string(Nametable::A, 1, 4, "BROWN FOX"_l);
-    render_string(Nametable::A, 1, 7, "JUMPS OVER"_l);
-    render_string(Nametable::A, 1, 10, "THE LAZY DOG"_l);
-    render_string(Nametable::A, 1, 14, "PUSH SELECT"_l);
-    render_string(Nametable::A, 1, 17, "TO SWITCH VIEW"_l);
+    // render_string(Nametable::A, 1, 1, "THE QUICK"_l);
+    // render_string(Nametable::A, 1, 4, "BROWN FOX"_l);
+    // render_string(Nametable::A, 1, 7, "JUMPS OVER"_l);
+    // render_string(Nametable::A, 1, 10, "THE LAZY DOG"_l);
+    // render_string(Nametable::A, 1, 14, "PUSH SELECT"_l);
+    // render_string(Nametable::A, 1, 17, "TO SWITCH VIEW"_l);
     
     // Turn on the screen, showing both the background and sprites
     ppu_on_all();
