@@ -25,6 +25,8 @@ If you have experience using CMake, then don't let me tell you how to live your 
 
 But if you don't, here's my recommendations.
 
+* Download and install Ninja Build <https://github.com/ninja-build/ninja/wiki/Pre-built-Ninja-packages> and put it in your PATH
+  * If you are Windows, you can install it through using WinGet. Run the following in a terminal `winget install Ninja-build.Ninja`
 * Download and install CMake <https://cmake.org/download/>
 * Download VSCODE <https://code.visualstudio.com/Download> and open up the project folder
 * Install the recommended extensions (which are the following list of extensions:)
