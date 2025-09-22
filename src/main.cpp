@@ -7,6 +7,7 @@
 
 // Add-ons to the neslib, bringing metatile support and more
 #include <nesdoug.h>
+#include <zaplib.h>
 
 // Include our own player update function for the movable sprite.
 #include "player.hpp"
@@ -110,6 +111,9 @@ extern const uint8_t example_ca65_data[];
 // This is a zeropage variable defined in ca65
 extern uint8_t __zeropage var_defined_in_ca65;
 
+unsigned char pad2_zapper;
+unsigned char zapper_ready; //wait till it's 0
+
 
 int main() {
     
@@ -158,12 +162,33 @@ int main() {
         // Once a frame, clear the sprites out so that we don't have leftover sprites.
         oam_clear();
 
+		zapper_ready = pad2_zapper^1; // XOR last frame, make sure not held down still
+		// is trigger pulled?
+		pad2_zapper = zap_shoot(1); // controller slot 2
+
         // Run the main code for processing our backgrounds.
         // NOTE: llvm-mos is very aggressive at inlining, so don't stress the small things
         // like function call overhead too much.
         update_view();
 
         update_player_position();
+
+        if (pad2_zapper && zapper_ready)
+        {   
+            // TODO: Needed?
+            //ppu_wait_nmi();
+
+            bool hit_detected = false;
+
+            ppu_wait_nmi();
+
+            hit_detected = zap_read(1);
+
+            if (hit_detected)
+            {
+                show_left_nametable = !show_left_nametable;
+            }
+        }        
         
         // All done! Wait for the next frame before looping again
         ppu_wait_frame();
