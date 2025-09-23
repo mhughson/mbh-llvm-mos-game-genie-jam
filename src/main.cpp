@@ -15,6 +15,7 @@
 // Include our own player update function for the movable sprite.
 #include "player.hpp"
 #include "text_render.hpp"
+#include "metasprites.h"
 
 // Include a basic nametable thats RLE compressed for the demo
 const unsigned char nametable[] = {
@@ -22,23 +23,8 @@ const unsigned char nametable[] = {
 };
 
 // On the Game Genie, only color 0 and 3 of each palette will be used
-static const uint8_t default_palette[] = 
-{ 
-    0x0f,0x00,0x10,0x15,0x0f,0x0c,0x21,0x32,0x0f,0x05,0x16,0x27,0x0f,0x0b,0x1a,0x29,
-    0x0f,0x00,0x10,0x15,0x0f,0x0c,0x21,0x32,0x0f,0x05,0x16,0x27,0x0f,0x0b,0x1a,0x29,
-};
 
-
-
-static const uint8_t metasprite_box[]={
-
-    0,  0,0x0f,0,
-    8,  0,0x0f,0,
-    0,  8,0x0f,0,
-    8,  8,0x0f,0,
-    0x80
-
-};
+const unsigned char palette_metaspr_a[16]={ 0x0f,0x00,0x10,0x30,0x0f,0x0c,0x21,0x32,0x0f,0x05,0x16,0x27,0x0f,0x0b,0x1a,0x29 };
 
 // Tracking Zapper State
 static uint8_t zapper_pressed = 0;
@@ -61,7 +47,7 @@ Entity ActiveEntities[NUM_ENTITIES];
 // ENTRY POINT FOR THE PROGRAM
 int main() 
 {
-    
+  
     // Tell NMI to update graphics using the VRAM_BUFFER provided by nesdoug library
     set_vram_buffer();
     
@@ -76,7 +62,8 @@ int main()
     oam_size(0);
 
     // Upload a basic palette we can use later.
-    pal_all(default_palette);
+    pal_bg(palette_metaspr_a);
+    pal_spr(palette_metaspr_a);
 
     // Set the scroll position on the screen to 0, 0
     scroll(0, 0);
@@ -138,7 +125,20 @@ int main()
                 ActiveEntities[i].x += ActiveEntities[i].vel_x;
                 ActiveEntities[i].y += ActiveEntities[i].vel_y;
 
-                oam_meta_spr(ActiveEntities[i].x.as_i(), ActiveEntities[i].y.as_i(), metasprite_box);
+                ++ActiveEntities[i].anim_counter;
+
+                if (ActiveEntities[i].anim_counter > 5)
+                {
+                    ActiveEntities[i].anim_counter = 0;
+                    ++ActiveEntities[i].anim_frame;
+
+                    if (ActiveEntities[i].anim_frame > 1)
+                    {
+                        ActiveEntities[i].anim_frame = 0;
+                    }
+                }
+
+                oam_meta_spr(ActiveEntities[i].x.as_i(), ActiveEntities[i].y.as_i(), metaspr_list[1 + ActiveEntities[i].anim_frame]);
             }
         }
 
@@ -155,7 +155,7 @@ int main()
                 if (ActiveEntities[i].cur_state != Entity_States::UNUSED)
                 {
                     oam_clear();
-                    oam_meta_spr(ActiveEntities[i].x.as_i(), ActiveEntities[i].y.as_i(), metasprite_box);
+                    oam_meta_spr(ActiveEntities[i].x.as_i(), ActiveEntities[i].y.as_i(), metaspr_box_16_16_data);
 
                     // NOTE: Must be here before zap_read, or else the zapper
                     //       will see the previous frames data.

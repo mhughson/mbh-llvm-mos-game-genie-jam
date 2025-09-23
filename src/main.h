@@ -1,6 +1,7 @@
 #ifndef B78B5263_80F5_427B_82AB_4E62FB56CCA0
 #define B78B5263_80F5_427B_82AB_4E62FB56CCA0
 
+#include <cstdint>
 #include <fixed_point.h>
 using namespace fixedpoint_literals;
 
@@ -27,6 +28,9 @@ public:
     fs8_8 vel_y = 0;
 
     Entity_States cur_state = Entity_States::UNUSED;
+
+    uint8_t anim_counter = 0;
+    uint8_t anim_frame = 0;
 };
 
 #endif /* B78B5263_80F5_427B_82AB_4E62FB56CCA0 */
