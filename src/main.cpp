@@ -1,3 +1,4 @@
+#include "main.h"
 
 // Used for standard int size defines
 #include <cstdint>
@@ -10,8 +11,6 @@
 #include <nesdoug.h>
 #include <stdlib.h>
 #include <zaplib.h>
-#include <fixed_point.h>
-using namespace fixedpoint_literals;
 
 // Include our own player update function for the movable sprite.
 #include "player.hpp"
@@ -23,20 +22,15 @@ const unsigned char nametable[] = {
 };
 
 // On the Game Genie, only color 0 and 3 of each palette will be used
-static const uint8_t default_palette[] = {
-// BG Palette
-    0x0f, 0x0f, 0x0f, 0x30,
-    0x0f, 0x0f, 0x0f, 0x22,
-    0x0f, 0x0f, 0x0f, 0x15,
-    0x0f, 0x0f, 0x0f, 0x0f,
-// Sprite Palette
-    0x0f, 0x0f, 0x0f, 0x30,
-    0x0f, 0x0f, 0x0f, 0x0f,
-    0x0f, 0x0f, 0x0f, 0x0f,
-    0x0f, 0x0f, 0x0f, 0x0f,
+static const uint8_t default_palette[] = 
+{ 
+    0x0f,0x00,0x10,0x15,0x0f,0x0c,0x21,0x32,0x0f,0x05,0x16,0x27,0x0f,0x0b,0x1a,0x29,
+    0x0f,0x00,0x10,0x15,0x0f,0x0c,0x21,0x32,0x0f,0x05,0x16,0x27,0x0f,0x0b,0x1a,0x29,
 };
 
-const uint8_t Metasprite0[]={
+
+
+static const uint8_t metasprite_box[]={
 
     0,  0,0x0f,0,
     8,  0,0x0f,0,
@@ -46,117 +40,27 @@ const uint8_t Metasprite0[]={
 
 };
 
-// Start the scroll position at 0
-static uint8_t scroll_y = 0;
-static int8_t direction = 1;
-static uint8_t scroll_frame_count = 0;
-static bool show_left_nametable = true;
+// Tracking Zapper State
+static uint8_t zapper_pressed = 0;
+static uint8_t zapper_ready = 0; //wait till it's 0
 
-unsigned char pad2_zapper = 0;
-unsigned char zapper_ready = 0; //wait till it's 0
-
-uint8_t pad = 0;
-uint8_t pad_new = 0;
-
-// Simple view with just some text rendered to it for demonstration.
-void update_text_view() {
-    set_scroll_x(0x00);
-    set_scroll_y(0x00);
-}
-
-// Background showing how to change the scroll every frame or so
-void update_scrolling_view() {
-    // Update the scroll each frame to bounce the screen
-    scroll_frame_count = (scroll_frame_count + 1) & 0x1f;
-
-    // every 32 frames, switch which direction to move the words
-    direction = scroll_frame_count != 0 ? direction : -direction;
-    scroll_y += direction;
-    // Be careful when scrolling in the Y direction!
-    // Setting the y scroll between 240-255 will try to render the attribute table.
-    // So make sure if you are setting the scroll that you skip over this.
-    // The nesdoug libary has a add_scroll_y/sub_scroll_y helper method for skipping those.
-    // But i'm not using them here.
-    if (scroll_y >= 240) {
-        // if we are going up into 240-255, then skip to 0
-        // else we are going down into 255, so skip to 239
-        scroll_y = direction > 0 ? 0 : 239;
-    }
-    set_scroll_x(0x100);
-    set_scroll_y(scroll_y);
-}
-
-#define VIEW_FADE_FRAMES 4
-// Handles checking if select was just pressed this frame and switches game modes
-void update_view() {
-
-    bool did_fade = false;
-
-    // Using `pad_new` lets us check only which buttons are newly pressed this frame.
-    auto input = get_pad_new(0);
-    // If we just pushed select, then switch to the other "game mode"
-    if (input & PAD_SELECT) {
-        show_left_nametable = !show_left_nametable;
-
-        delay(VIEW_FADE_FRAMES);
-        pal_bright(3);
-        delay(VIEW_FADE_FRAMES);
-        pal_bright(2);
-        delay(VIEW_FADE_FRAMES);
-        pal_bright(1);
-        delay(VIEW_FADE_FRAMES);
-        pal_bright(0);
-
-        did_fade = true;
-    }
-    if (show_left_nametable) {
-        update_text_view();
-    } else {
-        update_scrolling_view();
-    }
-
-    if (did_fade) {
-        pal_bright(1);
-        delay(VIEW_FADE_FRAMES);
-        pal_bright(2);
-        delay(VIEW_FADE_FRAMES);
-        pal_bright(3);
-        delay(VIEW_FADE_FRAMES);
-        pal_bright(4);
-    }
-}
+// Tracking gamepad state (held and pressed)
+static uint8_t pad = 0;
+static uint8_t pad_pressed = 0;
 
 // We defined this data in ca65 as an example of how to reference labels defined in asm in C
 extern const uint8_t example_ca65_data[];
 // This is a zeropage variable defined in ca65
 extern uint8_t __zeropage var_defined_in_ca65;
 
-enum Entity_States
-{
-    UNUSED = 0,
-    ACTIVE = 1,
-};
-
-class Entity
-{
-public:
-
-    // position
-    fu8_8 x = 0;
-    fu8_8 y = 0;
-
-    // velocity
-    fs8_8 vel_x = 0;
-    fs8_8 vel_y = 0;
-
-    Entity_States cur_state = Entity_States::UNUSED;
-};
-
-#define NUM_ENTITIES 8
+// An array of all the active entities. If a new entities wants to spawn
+// it needs to find an empty slot in here first.
 Entity ActiveEntities[NUM_ENTITIES];
 
 
-int main() {
+// ENTRY POINT FOR THE PROGRAM
+int main() 
+{
     
     // Tell NMI to update graphics using the VRAM_BUFFER provided by nesdoug library
     set_vram_buffer();
@@ -179,19 +83,10 @@ int main() {
     
     // And then clear out the other nametable as well.
     vram_adr(NAMETABLE_B);
+
     // Write a RLE compressed nametable to the screen. You can generate NESLIB compatible RLE
     // compressed nametables with a tool like NEXXT
     vram_unrle(nametable);
-
-    // Example string rendering using the custom string conversion.
-    // The `_l` is a user defined literal, which converts from ASCII to our custom character map at compile time
-    // ie: in the generated code "THE QUICK" will be compiled as {Letter::T, Letter::H, ... Letter::NUL}
-    // render_string(Nametable::A, 1, 1, "THE QUICK"_l);
-    // render_string(Nametable::A, 1, 4, "BROWN FOX"_l);
-    // render_string(Nametable::A, 1, 7, "JUMPS OVER"_l);
-    // render_string(Nametable::A, 1, 10, "THE LAZY DOG"_l);
-    // render_string(Nametable::A, 1, 14, "PUSH SELECT"_l);
-    // render_string(Nametable::A, 1, 17, "TO SWITCH VIEW"_l);
     
     // Turn on the screen, showing both the background and sprites
     ppu_on_all();
@@ -199,19 +94,26 @@ int main() {
     // Now time to start the main game loop
     while (true) {
         
-        pad_new = pad_trigger(0);
+        // Get the input state.
+        // NOTE: This will return the "trigger/pressed" state, but pad_state
+        //       will still return the "held" state.
+        pad_pressed = pad_trigger(0);
         pad = pad_state(0);
 
         // Once a frame, clear the sprites out so that we don't have leftover sprites.
         oam_clear();
 
-		zapper_ready = pad2_zapper^1; // XOR last frame, make sure not held down still
+        // XOR with the last frame to make sure this is a NEW press. In other words,
+        // if pad2_zapper was 1 last frame (pressed), zapper_ready will be 0 (not ready).
+		zapper_ready = zapper_pressed^1;
+
 		// is trigger pulled?
-		pad2_zapper = zap_shoot(1); // controller slot 2
+		zapper_pressed = zap_shoot(1);
 
         update_player_position();
 
-        if (pad_new & PAD_B)
+        // DEBUG: Spawn enemies to shoot.
+        if (pad_pressed & PAD_B)
         {
             for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
             {
@@ -228,6 +130,7 @@ int main() {
             }
         }
 
+        // Update all the entities and draw them to the screen.
         for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
         {
             if (ActiveEntities[i].cur_state != Entity_States::UNUSED)
@@ -235,24 +138,27 @@ int main() {
                 ActiveEntities[i].x += ActiveEntities[i].vel_x;
                 ActiveEntities[i].y += ActiveEntities[i].vel_y;
 
-                oam_meta_spr(ActiveEntities[i].x.as_i(), ActiveEntities[i].y.as_i(), Metasprite0);
+                oam_meta_spr(ActiveEntities[i].x.as_i(), ActiveEntities[i].y.as_i(), metasprite_box);
             }
         }
 
-        // TODO: Check against Entities
-        if (pad2_zapper && zapper_ready)
+        // Was the Zapper pressed this frame, but NOT pressed last frame.
+        if (zapper_pressed && zapper_ready)
         {   
             // TODO: Needed?
             ppu_wait_nmi();
 
             bool hit_detected = false;
 
-            for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
+            for (uint8_t i = 0; i < NUM_ENTITIES; ++i)
             {
                 if (ActiveEntities[i].cur_state != Entity_States::UNUSED)
                 {
                     oam_clear();
-                    oam_meta_spr(ActiveEntities[i].x.as_i(), ActiveEntities[i].y.as_i(), Metasprite0);
+                    oam_meta_spr(ActiveEntities[i].x.as_i(), ActiveEntities[i].y.as_i(), metasprite_box);
+
+                    // NOTE: Must be here before zap_read, or else the zapper
+                    //       will see the previous frames data.
                     ppu_wait_nmi();
 
                     hit_detected = zap_read(1);
@@ -267,7 +173,7 @@ int main() {
         }        
         
         // All done! Wait for the next frame before looping again
-        ppu_wait_frame();
+        ppu_wait_nmi();
     }
     // Tell the compiler we are never stopping the game loop!
     __builtin_unreachable();

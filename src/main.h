@@ -1,0 +1,32 @@
+#ifndef B78B5263_80F5_427B_82AB_4E62FB56CCA0
+#define B78B5263_80F5_427B_82AB_4E62FB56CCA0
+
+#include <fixed_point.h>
+using namespace fixedpoint_literals;
+
+#define NUM_ENTITIES 8
+
+// The different states and any entity can be in.
+enum Entity_States
+{
+    UNUSED = 0,
+    ACTIVE = 1,
+};
+
+// Generic entity class for physical objects in the world.
+class Entity
+{
+public:
+
+    // position
+    fu8_8 x = 0;
+    fu8_8 y = 0;
+
+    // velocity
+    fs8_8 vel_x = 0;
+    fs8_8 vel_y = 0;
+
+    Entity_States cur_state = Entity_States::UNUSED;
+};
+
+#endif /* B78B5263_80F5_427B_82AB_4E62FB56CCA0 */
