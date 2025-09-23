@@ -3,11 +3,15 @@
 #include <cstdint>
 
 // Common C NES libary that includes a simple NMI update routine
+#include <initializer_list>
 #include <neslib.h>
 
 // Add-ons to the neslib, bringing metatile support and more
 #include <nesdoug.h>
+#include <stdlib.h>
 #include <zaplib.h>
+#include <fixed_point.h>
+using namespace fixedpoint_literals;
 
 // Include our own player update function for the movable sprite.
 #include "player.hpp"
@@ -32,11 +36,27 @@ static const uint8_t default_palette[] = {
     0x0f, 0x0f, 0x0f, 0x0f,
 };
 
+const uint8_t Metasprite0[]={
+
+    0,  0,0x0f,0,
+    8,  0,0x0f,0,
+    0,  8,0x0f,0,
+    8,  8,0x0f,0,
+    0x80
+
+};
+
 // Start the scroll position at 0
 static uint8_t scroll_y = 0;
 static int8_t direction = 1;
 static uint8_t scroll_frame_count = 0;
 static bool show_left_nametable = true;
+
+unsigned char pad2_zapper = 0;
+unsigned char zapper_ready = 0; //wait till it's 0
+
+uint8_t pad = 0;
+uint8_t pad_new = 0;
 
 // Simple view with just some text rendered to it for demonstration.
 void update_text_view() {
@@ -111,8 +131,29 @@ extern const uint8_t example_ca65_data[];
 // This is a zeropage variable defined in ca65
 extern uint8_t __zeropage var_defined_in_ca65;
 
-unsigned char pad2_zapper;
-unsigned char zapper_ready; //wait till it's 0
+enum Entity_States
+{
+    UNUSED = 0,
+    ACTIVE = 1,
+};
+
+class Entity
+{
+public:
+
+    // position
+    fu8_8 x = 0;
+    fu8_8 y = 0;
+
+    // velocity
+    fs8_8 vel_x = 0;
+    fs8_8 vel_y = 0;
+
+    Entity_States cur_state = Entity_States::UNUSED;
+};
+
+#define NUM_ENTITIES 8
+Entity ActiveEntities[NUM_ENTITIES];
 
 
 int main() {
@@ -157,8 +198,10 @@ int main() {
 
     // Now time to start the main game loop
     while (true) {
-        // At the start of the frame, poll the controller to get the latest state.
-        pad_poll(0);
+        
+        pad_new = pad_trigger(0);
+        pad = pad_state(0);
+
         // Once a frame, clear the sprites out so that we don't have leftover sprites.
         oam_clear();
 
@@ -166,27 +209,60 @@ int main() {
 		// is trigger pulled?
 		pad2_zapper = zap_shoot(1); // controller slot 2
 
-        // Run the main code for processing our backgrounds.
-        // NOTE: llvm-mos is very aggressive at inlining, so don't stress the small things
-        // like function call overhead too much.
-        update_view();
-
         update_player_position();
 
+        if (pad_new & PAD_B)
+        {
+            for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
+            {
+                if (ActiveEntities[i].cur_state == Entity_States::UNUSED)
+                {
+                    ActiveEntities[i].cur_state = Entity_States::ACTIVE;
+                    ActiveEntities[i].x = 128;
+                    ActiveEntities[i].y = (uint8_t)rand() % (240 - 16);
+
+                    ActiveEntities[i].vel_x = 0.35_s8_8;
+
+                    break;
+                }
+            }
+        }
+
+        for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
+        {
+            if (ActiveEntities[i].cur_state != Entity_States::UNUSED)
+            {
+                ActiveEntities[i].x += ActiveEntities[i].vel_x;
+                ActiveEntities[i].y += ActiveEntities[i].vel_y;
+
+                oam_meta_spr(ActiveEntities[i].x.as_i(), ActiveEntities[i].y.as_i(), Metasprite0);
+            }
+        }
+
+        // TODO: Check against Entities
         if (pad2_zapper && zapper_ready)
         {   
             // TODO: Needed?
-            //ppu_wait_nmi();
+            ppu_wait_nmi();
 
             bool hit_detected = false;
 
-            ppu_wait_nmi();
-
-            hit_detected = zap_read(1);
-
-            if (hit_detected)
+            for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
             {
-                show_left_nametable = !show_left_nametable;
+                if (ActiveEntities[i].cur_state != Entity_States::UNUSED)
+                {
+                    oam_clear();
+                    oam_meta_spr(ActiveEntities[i].x.as_i(), ActiveEntities[i].y.as_i(), Metasprite0);
+                    ppu_wait_nmi();
+
+                    hit_detected = zap_read(1);
+
+                    if (hit_detected)
+                    {
+                        ActiveEntities[i].cur_state = Entity_States::UNUSED;
+                        break;
+                    }
+                }
             }
         }        
         
