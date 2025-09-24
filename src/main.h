@@ -42,6 +42,8 @@ public:
 
     uint8_t anim_counter = 0;
     uint8_t anim_frame = 0;
+
+    bool facing_left = false;
 };
 
 enum Game_States

@@ -121,6 +121,8 @@ void update_player()
     {
         move_input_pressed = true;
 
+        p1.facing_left = true;
+
         if (p1.vel_x > -p1_VELOCITY_SPEED_LIMIT) 
         {
             p1.vel_x = p1.vel_x - p1_VELOCITY_PERFRAME;        
@@ -128,6 +130,7 @@ void update_player()
     }
     if (input & PAD_RIGHT)
     {
+        p1.facing_left = false;
         move_input_pressed = true;
         if (p1.vel_x < p1_VELOCITY_SPEED_LIMIT) 
         {
@@ -153,6 +156,7 @@ void update_player()
 
     if (!move_input_pressed)
     {
+        
         // Holding neither, so apply a braking force to stop the p1.
         if (p1.vel_x > 0) {
             auto braking_force = p1.vel_x - p1_BRAKING_FORCE;
@@ -176,26 +180,33 @@ void update_player()
     p1.x = p1.x + p1.vel_x;
     p1.y = p1.y + p1.vel_y;
 
-    // If the p1 is moving either left or right, increase the frame count
-    if (move_input_pressed) 
+    ++p1.anim_counter;
+
+    if (p1.anim_counter > 5)
     {
-        p1.anim_counter++;
-        // and then every 15 frames switch which frame we are using.
-        // the `& 1` is because we only have 2 frames of animation right now
-        p1.anim_frame = p1.anim_counter & 0xf ? p1.anim_frame : (p1.anim_frame + 1) & 1;
-    } 
-    else 
-    {
-        // We stopped moving, so reset the frame and animation count!
-        p1.anim_frame = 0;
         p1.anim_counter = 0;
+        ++p1.anim_frame;
+
+        if (p1.anim_frame > 1)
+        {
+            p1.anim_frame = 0;
+        }
     }
 
-    // Last thing to do is draw the p1 metasprite.
-    // Use the current frame as lookup into the list of metasprite pointers,
-    // and pass it and our current position to `oam_meta_spr` to draw it to the screen.
-    auto frame_ptr = player_metaspr_list[p1.anim_frame];
-    oam_meta_spr(p1.x.as_i(), p1.y.as_i(), frame_ptr);
+    uint8_t facing_offset = 0;
+    if (p1.facing_left)
+    {
+        facing_offset = 3;
+    }
+
+    if (move_input_pressed)
+    {
+        oam_meta_spr(p1.x.as_i(), p1.y.as_i(), metaspr_list[3 + facing_offset + p1.anim_frame]);
+    }
+    else
+    {
+        oam_meta_spr(p1.x.as_i(), p1.y.as_i(), metaspr_list[5 + facing_offset]);
+    }
 
 }
 
