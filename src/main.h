@@ -7,6 +7,17 @@ using namespace fixedpoint_literals;
 
 #define NUM_ENTITIES 8
 
+// Custom MIN/MAX macros that do not double evaluate the inputs
+#define MMAX(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a > _b ? _a : _b; })
+
+#define MMIN(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a > _b ? _b : _a; })
+
 // The different states and any entity can be in.
 enum Entity_States
 {

@@ -14,7 +14,6 @@
 #include <zaplib.h>
 
 // Include our own player update function for the movable sprite.
-#include "player.hpp"
 #include "text_render.hpp"
 #include "metasprites.h"
 
@@ -51,6 +50,9 @@ extern uint8_t __zeropage var_defined_in_ca65;
 // An array of all the active entities. If a new entities wants to spawn
 // it needs to find an empty slot in here first.
 Entity ActiveEntities[NUM_ENTITIES];
+
+// Player object.
+Entity p1;
 
 Game_States cur_state = Game_States::STATE_TITLE;
 
@@ -104,9 +106,102 @@ void update_state_title()
     }
 }
 
+constexpr fs8_8 p1_VELOCITY_PERFRAME = 1.15_s8_8;
+constexpr fs8_8 p1_VELOCITY_SPEED_LIMIT = 2.0_s8_8;
+constexpr fs8_8 p1_BRAKING_FORCE = 0.35_s8_8;
+
+void update_player()
+{
+    // Get the latest input from the controller without polling them again
+    auto input = pad_state(0);
+    bool move_input_pressed = false;
+
+    // Use the input to adjust the p1 velocity
+    if (input & PAD_LEFT)
+    {
+        move_input_pressed = true;
+
+        if (p1.vel_x > -p1_VELOCITY_SPEED_LIMIT) 
+        {
+            p1.vel_x = p1.vel_x - p1_VELOCITY_PERFRAME;        
+        }
+    }
+    if (input & PAD_RIGHT)
+    {
+        move_input_pressed = true;
+        if (p1.vel_x < p1_VELOCITY_SPEED_LIMIT) 
+        {
+            p1.vel_x = p1.vel_x + p1_VELOCITY_PERFRAME;        
+        }
+    }
+    if (input & PAD_UP)
+    {
+        move_input_pressed = true;
+        if (p1.vel_y > -p1_VELOCITY_SPEED_LIMIT) 
+        {
+            p1.vel_y = p1.vel_y - p1_VELOCITY_PERFRAME;        
+        }
+    }
+    if (input & PAD_DOWN)
+    {
+        move_input_pressed = true;
+        if (p1.vel_y < p1_VELOCITY_SPEED_LIMIT) 
+        {
+            p1.vel_y = p1.vel_y + p1_VELOCITY_PERFRAME;        
+        }
+    }
+
+    if (!move_input_pressed)
+    {
+        // Holding neither, so apply a braking force to stop the p1.
+        if (p1.vel_x > 0) {
+            auto braking_force = p1.vel_x - p1_BRAKING_FORCE;
+            p1.vel_x = MMAX(braking_force, 0);
+        } 
+        else if (p1.vel_x < 0) {
+            auto braking_force = p1.vel_x + p1_BRAKING_FORCE;
+            p1.vel_x = MMIN(braking_force, 0);
+        }
+        
+        if (p1.vel_y > 0) {
+            auto braking_force = p1.vel_y - p1_BRAKING_FORCE;
+            p1.vel_y = MMAX(braking_force, 0);
+        } else if (p1.vel_y < 0) {
+            auto braking_force = p1.vel_y + p1_BRAKING_FORCE;
+            p1.vel_y = MMIN(braking_force, 0);
+        }
+    }
+
+    // Finally apply the velocity for the p1 that we calculated
+    p1.x = p1.x + p1.vel_x;
+    p1.y = p1.y + p1.vel_y;
+
+    // If the p1 is moving either left or right, increase the frame count
+    if (move_input_pressed) 
+    {
+        p1.anim_counter++;
+        // and then every 15 frames switch which frame we are using.
+        // the `& 1` is because we only have 2 frames of animation right now
+        p1.anim_frame = p1.anim_counter & 0xf ? p1.anim_frame : (p1.anim_frame + 1) & 1;
+    } 
+    else 
+    {
+        // We stopped moving, so reset the frame and animation count!
+        p1.anim_frame = 0;
+        p1.anim_counter = 0;
+    }
+
+    // Last thing to do is draw the p1 metasprite.
+    // Use the current frame as lookup into the list of metasprite pointers,
+    // and pass it and our current position to `oam_meta_spr` to draw it to the screen.
+    auto frame_ptr = player_metaspr_list[p1.anim_frame];
+    oam_meta_spr(p1.x.as_i(), p1.y.as_i(), frame_ptr);
+
+}
+
 void update_state_gameplay()
 {
-    update_player_position();
+    update_player();
 
     // DEBUG: Spawn enemies to shoot.
     if (pad_pressed & PAD_B)
@@ -133,20 +228,20 @@ void update_state_gameplay()
     {
         if (ActiveEntities[i].cur_state != Entity_States::UNUSED)
         {
-            if (player.x.as_i() < ActiveEntities[i].x.as_i())
+            if (p1.x.as_i() < ActiveEntities[i].x.as_i())
             {
                 ActiveEntities[i].vel_x -= 0.01_s8_8;
             }
-            else if (player.x.as_i() > ActiveEntities[i].x.as_i())
+            else if (p1.x.as_i() > ActiveEntities[i].x.as_i())
             {
                 ActiveEntities[i].vel_x += 0.01_s8_8;
             }
 
-            if (player.y.as_i() < ActiveEntities[i].y.as_i())
+            if (p1.y.as_i() < ActiveEntities[i].y.as_i())
             {
                 ActiveEntities[i].vel_y -= 0.01_s8_8;
             }
-            else if (player.y.as_i() > ActiveEntities[i].y.as_i())
+            else if (p1.y.as_i() > ActiveEntities[i].y.as_i())
             {
                 ActiveEntities[i].vel_y += 0.01_s8_8;
             }                
