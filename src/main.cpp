@@ -4,6 +4,7 @@
 #include <cstdint>
 
 // Common C NES libary that includes a simple NMI update routine
+#include <fixed_point.h>
 #include <initializer_list>
 #include <neslib.h>
 
@@ -110,7 +111,7 @@ int main()
                     ActiveEntities[i].x = 128;
                     ActiveEntities[i].y = (uint8_t)rand() % (240 - 16);
 
-                    ActiveEntities[i].vel_x = 0.35_s8_8;
+                    //ActiveEntities[i].vel_x = 0.35_s8_8;
 
                     break;
                 }
@@ -122,6 +123,24 @@ int main()
         {
             if (ActiveEntities[i].cur_state != Entity_States::UNUSED)
             {
+                if (player.x.as_i() < ActiveEntities[i].x.as_i())
+                {
+                    ActiveEntities[i].vel_x -= 0.01_s8_8;
+                }
+                else if (player.x.as_i() > ActiveEntities[i].x.as_i())
+                {
+                    ActiveEntities[i].vel_x += 0.01_s8_8;
+                }
+
+                if (player.y.as_i() < ActiveEntities[i].y.as_i())
+                {
+                    ActiveEntities[i].vel_y -= 0.01_s8_8;
+                }
+                else if (player.y.as_i() > ActiveEntities[i].y.as_i())
+                {
+                    ActiveEntities[i].vel_y += 0.01_s8_8;
+                }                
+
                 ActiveEntities[i].x += ActiveEntities[i].vel_x;
                 ActiveEntities[i].y += ActiveEntities[i].vel_y;
 
