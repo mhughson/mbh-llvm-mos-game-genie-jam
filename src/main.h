@@ -33,4 +33,13 @@ public:
     uint8_t anim_frame = 0;
 };
 
+enum Game_States
+{
+    STATE_TITLE = 0,
+    STATE_GAMEPLAY,
+    STATE_GAMEOVER,
+};
+
+extern Game_States cur_state;
+
 #endif /* B78B5263_80F5_427B_82AB_4E62FB56CCA0 */

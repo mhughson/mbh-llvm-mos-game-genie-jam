@@ -27,6 +27,10 @@ const unsigned char screen_title[] = {
     #embed "../screen_title.nrle"
 };
 
+const unsigned char screen_gameplay[] = {
+    #embed "../screen_gameplay.nrle"
+};
+
 // On the Game Genie, only color 0 and 3 of each palette will be used
 
 const unsigned char palette_metaspr_a[16]={ 0x0f,0x00,0x10,0x30,0x0f,0x0c,0x21,0x32,0x0f,0x05,0x16,0x27,0x0f,0x0b,0x1a,0x29 };
@@ -48,6 +52,160 @@ extern uint8_t __zeropage var_defined_in_ca65;
 // it needs to find an empty slot in here first.
 Entity ActiveEntities[NUM_ENTITIES];
 
+Game_States cur_state = Game_States::STATE_TITLE;
+
+// Frame tick counter since power-on (incremented once per main loop iteration)
+static uint16_t ticks16 = 0; // 32-bit to avoid quick wrap; NES time constraints minimal
+
+void goto_state(Game_States new_state)
+{
+    cur_state = new_state;
+
+    switch (cur_state) 
+    {
+        case Game_States::STATE_TITLE:
+        {
+            // Upload a basic palette we can use later.
+            pal_bg(palette_metaspr_a);
+            pal_spr(palette_metaspr_a);
+
+            // Set the scroll position on the screen to 0, 0
+            scroll(0, 0);
+
+            vram_adr(NAMETABLE_A);
+            vram_unrle(screen_title);            
+            break;
+        }
+
+        case Game_States::STATE_GAMEPLAY:
+        {
+            // Reseed RNG every time we enter gameplay, using frame ticks as timing entropy.
+            srand((unsigned)ticks16);
+            ppu_off();
+            vram_adr(NAMETABLE_A);
+            vram_unrle(screen_gameplay);
+            ppu_on_all();
+            break;
+        }
+
+        case Game_States::STATE_GAMEOVER:
+        {
+            break;
+        }
+    }
+}
+
+void update_state_title()
+{
+    if (pad_pressed & (PAD_A | PAD_START)) 
+    {
+        goto_state(STATE_GAMEPLAY);
+        return;
+    }
+}
+
+void update_state_gameplay()
+{
+    update_player_position();
+
+    // DEBUG: Spawn enemies to shoot.
+    if (pad_pressed & PAD_B)
+    {
+        for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
+        {
+            if (ActiveEntities[i].cur_state == Entity_States::UNUSED)
+            {
+                ActiveEntities[i].cur_state = Entity_States::ACTIVE;
+                ActiveEntities[i].x = 128;
+                ActiveEntities[i].y = (uint8_t)rand() % (240 - 16);
+
+                ActiveEntities[i].vel_x = 0;
+                ActiveEntities[i].vel_y = 0;
+                ActiveEntities[i].anim_counter = 0;
+
+                break;
+            }
+        }
+    }
+
+    // Update all the entities and draw them to the screen.
+    for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
+    {
+        if (ActiveEntities[i].cur_state != Entity_States::UNUSED)
+        {
+            if (player.x.as_i() < ActiveEntities[i].x.as_i())
+            {
+                ActiveEntities[i].vel_x -= 0.01_s8_8;
+            }
+            else if (player.x.as_i() > ActiveEntities[i].x.as_i())
+            {
+                ActiveEntities[i].vel_x += 0.01_s8_8;
+            }
+
+            if (player.y.as_i() < ActiveEntities[i].y.as_i())
+            {
+                ActiveEntities[i].vel_y -= 0.01_s8_8;
+            }
+            else if (player.y.as_i() > ActiveEntities[i].y.as_i())
+            {
+                ActiveEntities[i].vel_y += 0.01_s8_8;
+            }                
+
+            ActiveEntities[i].x += ActiveEntities[i].vel_x;
+            ActiveEntities[i].y += ActiveEntities[i].vel_y;
+
+            ++ActiveEntities[i].anim_counter;
+
+            if (ActiveEntities[i].anim_counter > 5)
+            {
+                ActiveEntities[i].anim_counter = 0;
+                ++ActiveEntities[i].anim_frame;
+
+                if (ActiveEntities[i].anim_frame > 1)
+                {
+                    ActiveEntities[i].anim_frame = 0;
+                }
+            }
+
+            oam_meta_spr(ActiveEntities[i].x.as_i(), ActiveEntities[i].y.as_i(), metaspr_list[1 + ActiveEntities[i].anim_frame]);
+        }
+    }
+
+    // Was the Zapper pressed this frame, but NOT pressed last frame.
+    if (zapper_pressed && zapper_ready)
+    {   
+        // TODO: Needed?
+        ppu_wait_nmi();
+
+        bool hit_detected = false;
+
+        for (uint8_t i = 0; i < NUM_ENTITIES; ++i)
+        {
+            if (ActiveEntities[i].cur_state != Entity_States::UNUSED)
+            {
+                oam_clear();
+                oam_meta_spr(ActiveEntities[i].x.as_i(), ActiveEntities[i].y.as_i(), metaspr_box_16_16_data);
+
+                // NOTE: Must be here before zap_read, or else the zapper
+                //       will see the previous frames data.
+                ppu_wait_nmi();
+
+                hit_detected = zap_read(1);
+
+                if (hit_detected)
+                {
+                    ActiveEntities[i].cur_state = Entity_States::UNUSED;
+                    break;
+                }
+            }
+        }
+    }        
+}
+
+void update_state_gameover()
+{
+
+}
 
 // ENTRY POINT FOR THE PROGRAM
 int main() 
@@ -82,12 +240,19 @@ int main()
     // Write a RLE compressed nametable to the screen. You can generate NESLIB compatible RLE
     // compressed nametables with a tool like NEXXT
     vram_unrle(nametable);
+
+
+    goto_state(Game_States::STATE_TITLE);
+
     
     // Turn on the screen, showing both the background and sprites
     ppu_on_all();
 
     // Now time to start the main game loop
-    while (true) {
+    while (true) 
+    {
+        // Count frames elapsed since boot (before reading input so timing differences matter for seeding)
+        ++ticks16;
         
         // Get the input state.
         // NOTE: This will return the "trigger/pressed" state, but pad_state
@@ -105,98 +270,26 @@ int main()
 		// is trigger pulled?
 		zapper_pressed = zap_shoot(1);
 
-        update_player_position();
-
-        // DEBUG: Spawn enemies to shoot.
-        if (pad_pressed & PAD_B)
+        switch (cur_state) 
         {
-            for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
+            case STATE_TITLE:
             {
-                if (ActiveEntities[i].cur_state == Entity_States::UNUSED)
-                {
-                    ActiveEntities[i].cur_state = Entity_States::ACTIVE;
-                    ActiveEntities[i].x = 128;
-                    ActiveEntities[i].y = (uint8_t)rand() % (240 - 16);
+                update_state_title();
+                break;
+            }
 
-                    //ActiveEntities[i].vel_x = 0.35_s8_8;
-
-                    break;
-                }
+            case STATE_GAMEPLAY:
+            {
+                update_state_gameplay();
+                break;
+            }
+        
+            case STATE_GAMEOVER:
+            {
+                update_state_gameover();
+                break;
             }
         }
-
-        // Update all the entities and draw them to the screen.
-        for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
-        {
-            if (ActiveEntities[i].cur_state != Entity_States::UNUSED)
-            {
-                if (player.x.as_i() < ActiveEntities[i].x.as_i())
-                {
-                    ActiveEntities[i].vel_x -= 0.01_s8_8;
-                }
-                else if (player.x.as_i() > ActiveEntities[i].x.as_i())
-                {
-                    ActiveEntities[i].vel_x += 0.01_s8_8;
-                }
-
-                if (player.y.as_i() < ActiveEntities[i].y.as_i())
-                {
-                    ActiveEntities[i].vel_y -= 0.01_s8_8;
-                }
-                else if (player.y.as_i() > ActiveEntities[i].y.as_i())
-                {
-                    ActiveEntities[i].vel_y += 0.01_s8_8;
-                }                
-
-                ActiveEntities[i].x += ActiveEntities[i].vel_x;
-                ActiveEntities[i].y += ActiveEntities[i].vel_y;
-
-                ++ActiveEntities[i].anim_counter;
-
-                if (ActiveEntities[i].anim_counter > 5)
-                {
-                    ActiveEntities[i].anim_counter = 0;
-                    ++ActiveEntities[i].anim_frame;
-
-                    if (ActiveEntities[i].anim_frame > 1)
-                    {
-                        ActiveEntities[i].anim_frame = 0;
-                    }
-                }
-
-                oam_meta_spr(ActiveEntities[i].x.as_i(), ActiveEntities[i].y.as_i(), metaspr_list[1 + ActiveEntities[i].anim_frame]);
-            }
-        }
-
-        // Was the Zapper pressed this frame, but NOT pressed last frame.
-        if (zapper_pressed && zapper_ready)
-        {   
-            // TODO: Needed?
-            ppu_wait_nmi();
-
-            bool hit_detected = false;
-
-            for (uint8_t i = 0; i < NUM_ENTITIES; ++i)
-            {
-                if (ActiveEntities[i].cur_state != Entity_States::UNUSED)
-                {
-                    oam_clear();
-                    oam_meta_spr(ActiveEntities[i].x.as_i(), ActiveEntities[i].y.as_i(), metaspr_box_16_16_data);
-
-                    // NOTE: Must be here before zap_read, or else the zapper
-                    //       will see the previous frames data.
-                    ppu_wait_nmi();
-
-                    hit_detected = zap_read(1);
-
-                    if (hit_detected)
-                    {
-                        ActiveEntities[i].cur_state = Entity_States::UNUSED;
-                        break;
-                    }
-                }
-            }
-        }        
         
         // All done! Wait for the next frame before looping again
         ppu_wait_nmi();
