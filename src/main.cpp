@@ -23,6 +23,10 @@ const unsigned char nametable[] = {
     #embed "../default-nametable-rle.nam"
 };
 
+const unsigned char screen_title[] = {
+    #embed "../screen_title.nrle"
+};
+
 // On the Game Genie, only color 0 and 3 of each palette will be used
 
 const unsigned char palette_metaspr_a[16]={ 0x0f,0x00,0x10,0x30,0x0f,0x0c,0x21,0x32,0x0f,0x05,0x16,0x27,0x0f,0x0b,0x1a,0x29 };
@@ -68,6 +72,9 @@ int main()
 
     // Set the scroll position on the screen to 0, 0
     scroll(0, 0);
+
+    vram_adr(NAMETABLE_A);
+    vram_unrle(screen_title);
     
     // And then clear out the other nametable as well.
     vram_adr(NAMETABLE_B);
