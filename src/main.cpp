@@ -30,6 +30,10 @@ const unsigned char screen_gameplay[] = {
     #embed "../screen_gameplay.nrle"
 };
 
+const unsigned char screen_gameover[] = {
+    #embed "../screen_gameover.nrle"
+};
+
 // On the Game Genie, only color 0 and 3 of each palette will be used
 
 const unsigned char palette_metaspr_a[16]={ 0x0f,0x00,0x10,0x30,0x0f,0x0c,0x21,0x32,0x0f,0x05,0x16,0x27,0x0f,0x0b,0x1a,0x29 };
@@ -67,6 +71,8 @@ void goto_state(Game_States new_state)
     {
         case Game_States::STATE_TITLE:
         {
+            ppu_off();
+            oam_clear();
             // Upload a basic palette we can use later.
             pal_bg(palette_metaspr_a);
             pal_spr(palette_metaspr_a);
@@ -75,7 +81,8 @@ void goto_state(Game_States new_state)
             scroll(0, 0);
 
             vram_adr(NAMETABLE_A);
-            vram_unrle(screen_title);            
+            vram_unrle(screen_title);   
+            ppu_on_all();         
             break;
         }
 
@@ -86,12 +93,23 @@ void goto_state(Game_States new_state)
             ppu_off();
             vram_adr(NAMETABLE_A);
             vram_unrle(screen_gameplay);
+
+            // Clear out all entities
+            for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
+            {
+                ActiveEntities[i].cur_state = Entity_States::UNUSED;
+            }
+
             ppu_on_all();
             break;
         }
 
         case Game_States::STATE_GAMEOVER:
         {
+            ppu_off();
+            vram_adr(NAMETABLE_A);
+            vram_unrle(screen_gameover);
+            ppu_on_all();
             break;
         }
     }
@@ -234,6 +252,12 @@ void update_state_gameplay()
         }
     }
 
+    if (pad_pressed & PAD_SELECT)
+    {
+        goto_state(STATE_GAMEOVER);
+        return;
+    }   
+
     constexpr fs8_8 MAX_SPEED = 5.0_s8_8;
     constexpr fs8_8 ACCELERATION = 0.01_s8_8;
 
@@ -325,7 +349,11 @@ void update_state_gameplay()
 
 void update_state_gameover()
 {
-
+    if (pad_pressed & (PAD_A | PAD_START) || (zapper_pressed && zapper_ready)) 
+    {
+        goto_state(STATE_TITLE);
+        return;
+    }
 }
 
 // ENTRY POINT FOR THE PROGRAM
