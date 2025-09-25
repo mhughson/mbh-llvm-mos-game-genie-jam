@@ -124,9 +124,9 @@ void update_state_title()
     }
 }
 
-constexpr fs8_8 p1_VELOCITY_PERFRAME = 1.15_s8_8;
-constexpr fs8_8 p1_VELOCITY_SPEED_LIMIT = 2.0_s8_8;
-constexpr fs8_8 p1_BRAKING_FORCE = 0.35_s8_8;
+constexpr fs8_8 p1_VELOCITY_PERFRAME = 0.2_s8_8;
+constexpr fs8_8 p1_VELOCITY_SPEED_LIMIT = 1.0_s8_8;
+constexpr fs8_8 p1_BRAKING_FORCE = 0.1_s8_8;
 
 void update_player()
 {
