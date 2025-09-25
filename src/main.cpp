@@ -99,7 +99,7 @@ void goto_state(Game_States new_state)
 
 void update_state_title()
 {
-    if (pad_pressed & (PAD_A | PAD_START)) 
+    if (pad_pressed & (PAD_A | PAD_START) || (zapper_pressed && zapper_ready)) 
     {
         goto_state(STATE_GAMEPLAY);
         return;
