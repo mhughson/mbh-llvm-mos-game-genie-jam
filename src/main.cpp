@@ -234,6 +234,9 @@ void update_state_gameplay()
         }
     }
 
+    constexpr fs8_8 MAX_SPEED = 5.0_s8_8;
+    constexpr fs8_8 ACCELERATION = 0.01_s8_8;
+
     // Update all the entities and draw them to the screen.
     for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
     {
@@ -241,21 +244,33 @@ void update_state_gameplay()
         {
             if (p1.x.as_i() < ActiveEntities[i].x.as_i())
             {
-                ActiveEntities[i].vel_x -= 0.01_s8_8;
+                if (ActiveEntities[i].vel_x > -MAX_SPEED) 
+                {
+                    ActiveEntities[i].vel_x -= ACCELERATION;
+                }   
             }
             else if (p1.x.as_i() > ActiveEntities[i].x.as_i())
             {
-                ActiveEntities[i].vel_x += 0.01_s8_8;
+                if (ActiveEntities[i].vel_x < MAX_SPEED) 
+                {
+                    ActiveEntities[i].vel_x += ACCELERATION;
+                }
             }
 
             if (p1.y.as_i() < ActiveEntities[i].y.as_i())
             {
-                ActiveEntities[i].vel_y -= 0.01_s8_8;
+                if (ActiveEntities[i].vel_y > -MAX_SPEED) 
+                {
+                    ActiveEntities[i].vel_y -= ACCELERATION;
+                }
             }
             else if (p1.y.as_i() > ActiveEntities[i].y.as_i())
             {
-                ActiveEntities[i].vel_y += 0.01_s8_8;
-            }                
+                if (ActiveEntities[i].vel_y < MAX_SPEED) 
+                {
+                    ActiveEntities[i].vel_y += ACCELERATION;
+                }
+            }
 
             ActiveEntities[i].x += ActiveEntities[i].vel_x;
             ActiveEntities[i].y += ActiveEntities[i].vel_y;
