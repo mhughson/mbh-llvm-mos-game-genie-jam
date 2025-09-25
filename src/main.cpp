@@ -281,14 +281,14 @@ void update_state_gameplay()
                 }
             }
 
-            if (p1.y.as_i() < ActiveEntities[i].y.as_i())
+            if ((p1.y.as_i() + 16) < ActiveEntities[i].y.as_i())
             {
                 if (ActiveEntities[i].vel_y > -MAX_SPEED) 
                 {
                     ActiveEntities[i].vel_y -= ACCELERATION;
                 }
             }
-            else if (p1.y.as_i() > ActiveEntities[i].y.as_i())
+            else if ((p1.y.as_i() + 16) > ActiveEntities[i].y.as_i())
             {
                 if (ActiveEntities[i].vel_y < MAX_SPEED) 
                 {
@@ -298,6 +298,24 @@ void update_state_gameplay()
 
             ActiveEntities[i].x += ActiveEntities[i].vel_x;
             ActiveEntities[i].y += ActiveEntities[i].vel_y;
+
+
+            // Is the center point of the entity colliding with the player?
+            // Note: The player and entity have top left origins.
+            //       The player is 32x16, and we want to collide with the
+            //       bottom 16x16 area, so we offset the player's y position by 16.
+            if (   (p1.x.as_i() + 8 >= ActiveEntities[i].x.as_i())
+                && (p1.x.as_i() <= ActiveEntities[i].x.as_i() + 8)
+                && (p1.y.as_i() + 16 + 8 >= ActiveEntities[i].y.as_i())
+                && (p1.y.as_i() + 16 <= ActiveEntities[i].y.as_i() + 8))
+            {
+                // Collision detected, go to game over state.
+                goto_state(STATE_GAMEOVER);
+                return;
+            }
+
+
+
 
             ++ActiveEntities[i].anim_counter;
 
