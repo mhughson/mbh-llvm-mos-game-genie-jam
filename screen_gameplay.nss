@@ -1,6 +1,6 @@
 NSTssTXT
 
-BtnTiles=1
+BtnTiles=0
 BtnChecker=0
 BtnSelTiles=0
 BtnChrBank1=1
@@ -55,7 +55,7 @@ VarPalBank_msprBuffer=0
 VarTileViewTagBuf=0
 VarBgPalCur=3
 VarPalActive=0
-VarTileActive=3
+VarTileActive=0
 VarBankActive=0
 VarPPUMask=0
 VarPPUMaskSet0=0
@@ -76,17 +76,17 @@ VarNameViewY=-1
 VarNameViewX2=0
 VarNameViewY2=-1
 VarNameSelectionL=-1
-VarNameSelectionR=0
+VarNameSelectionR=1
 VarNameSelectionT=-1
-VarNameSelectionB=0
-VarNameCopyW=-1
-VarNameCopyH=-1
-VarCHRSelectionL=3
-VarCHRSelectionR=4
+VarNameSelectionB=3
+VarNameCopyW=1
+VarNameCopyH=1
+VarCHRSelectionL=0
+VarCHRSelectionR=1
 VarCHRSelectionT=0
 VarCHRSelectionB=1
-VarCHRCopyW=-1
-VarCHRCopyH=-1
+VarCHRCopyW=16
+VarCHRCopyH=1
 VarCHRCopyRect=1
 VarCHRSelectRect=1
 VarCHRBanks=4
@@ -138,14 +138,14 @@ propertyCHRlabel7=global condition
 
 
 
-MetaSpriteBankName=session
+MetaSpriteBankName=screen_gameplay
 MetaspritePlayBackCursor=0
 
 
 FilterCHR=0
-FilterName=1
+FilterName=6
 FileNameCHR=
-FileNameName=
+FileNameName=C:\Users\Matt\Documents\Dev\NES\mbh-llvm-mos-game-genie-jam\screen_gameplay.nrle
 FileNamePal=
 FileNameMetaSpriteBank=
 FileNameTileProps=
@@ -160,7 +160,7 @@ RadioAutoexport_UseSubDir_NEXXT=0
 CheckAutoexport_MetatileAsBMP=0
 
 
-VarCHRSelected=00[3]0100[fc]
+VarCHRSelected=0100[ff]
 
 
 Palette=0f0010300f0c21320f0516270f0b1a290f1c21320f1122330f1223340f1324350f1324360f1526370f1627370f1928380f1829380f1b2a390f1b2b3c0f1c2c3b
@@ -169,31 +169,31 @@ Palette=0f0010300f0c21320f0516270f0b1a290f1c21320f1122330f1223340f1324350f132436
 PalUndo=0f0010300f0c21320f0516270f0b1a290f1c21320f1122330f1223340f1324350f1324360f1526370f1627370f1928380f1829380f1b2a390f1b2b3c0f1c2c3b
 
 
-CHRMain=00[10]ff[8]00[10]ff[18]00[3fc0]
+CHRMain=00[14]f0[4]00[4]f0[4]00[4]0f[4]00[4]0f[4]00[4]ff[4]00[4]ff[4]f0[4]00[4]f0[4]00[4]f0[14]0f[4]f0[4]0f[4]f0[4]ff[4]f0[4]ff[4]0f[4]00[4]0f[4]00[4]0f[4]f0[4]0f[4]f0[4]0f[14]ff[4]0f[4]ff[8]00[4]ff[4]00[4]ff[4]f0[4]ff[4]f0[4]ff[4]0f[4]ff[4]0f[4]ff[10]00[3f00]
 
 
-CHRUndo=00[10]ff[8]00[10]ff[18]00[3fc0]
+CHRUndo=00[14]f0[4]00[4]f0[4]00[4]0f[4]00[4]0f[4]00[4]ff[4]00[4]ff[4]f0[4]00[4]f0[4]00[4]f0[14]0f[4]f0[4]0f[4]f0[4]ff[4]f0[4]ff[4]0f[4]00[4]0f[4]00[4]0f[4]f0[4]0f[4]f0[4]0f[14]ff[4]0f[4]ff[8]00[4]ff[4]00[4]ff[4]f0[4]ff[4]f0[4]ff[4]0f[4]ff[4]0f[4]ff[10]00[3f00]
 
 
-CHRCopy=00[4000]
+CHRCopy=00[14]f0[4]00[4]f0[4]00[4]0f[4]00[4]0f[4]00[4]ff[4]00[4]ff[4]f0[4]00[4]f0[4]00[4]f0[14]0f[4]f0[4]0f[4]f0[4]ff[4]f0[4]ff[4]0f[4]00[4]0f[4]00[4]0f[4]f0[4]0f[4]f0[4]0f[14]ff[4]0f[4]ff[8]00[4]ff[4]00[4]ff[4]f0[4]ff[4]f0[4]ff[4]0f[4]ff[4]0f[4]ff[10]00[3f00]
 
 
-NameTable=00[3c0]
+NameTable=0f[21]0d00[1c]0e0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]0700[1c]0b0f[21]
 
 
-NameCopy=00[3c0]
+NameCopy=0f0d0f000f000f000f000f000f000f000f000f000f000f000f000f000f000f000f000f000f000f000f000f000f000f000f000f070f[8]00[384]
 
 
-NameUndo=00[3c0]
+NameUndo=0f[21]0d00[1c]0e0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]0700[1c]0b0f[21]
 
 
-AttrTable=00[40]
+AttrTable=8000[6]2000[28]8000[6]2000[8]
 
 
-AttrCopy=00[40]
+AttrCopy=02[5]0002000200020002000200020002000200020002000200020002000200020002000200020002000200020002[4]00[c]
 
 
-AttrUndo=00[40]
+AttrUndo=aa0a[6]aa2200[6]882200[6]882200[6]882200[6]882200[6]88a200[6]a80a[8]
 
 
 MetaSprites=ff[10000]
@@ -253,10 +253,10 @@ BrushMask_7b=00[2]01[3]00[c]01[5]00[a]01[7]00[9]01[7]00[9]01[7]00[a]01[5]00[c]01
 BrushMask_8b=00[2]01[4]00[b]01[6]00[9]01[8]00[8]01[8]00[8]01[8]00[8]01[8]00[9]01[6]00[b]01[4]00[8a]
 
 
-32_BankViewTable=00000000[100]00001000[100]00002000[100]00003000[100]
+32_BankViewTable=00000000[60]0000100000000000[9f]00001000[100]00002000[100]00003000[100]
 
 
-32_BankViewTableUndo=00000000[100]00001000[100]00002000[100]00003000[100]
+32_BankViewTableUndo=00000000[60]0000100000000000[9f]00001000[100]00002000[100]00003000[100]
 
 
 8_TileCollisionProperties=00[400]
@@ -331,14 +331,14 @@ MetatileSet_8x8_props=00[2000]
 MetatileSet_8x8_propsUndo=00[2000]
 
 
-MetatileSetLabels_2x2=Unlabeled,Unlabeled,Unlabeled,Unlabeled
-MetatileSetLabels_2x2Undo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+MetatileSetLabels_2x2=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+MetatileSetLabels_2x2Undo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
 
-MetatileSetLabels_4x4=Unlabeled,Unlabeled,Unlabeled,Unlabeled
-MetatileSetLabels_4x4Undo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+MetatileSetLabels_4x4=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+MetatileSetLabels_4x4Undo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
 
-MetatileSetLabels_8x8=Unlabeled,Unlabeled
-MetatileSetLabels_8x8Undo=Unlabeled,Unlabeled
+MetatileSetLabels_8x8=Unlabeled,Unlabeled
+MetatileSetLabels_8x8Undo=Unlabeled,Unlabeled
 
 CHRBankLabels=Unlabeled,Unlabeled,Unlabeled,Unlabeled
 
@@ -425,10 +425,10 @@ Checkpoint_AttrUndo=00[40]
 Checkpoint_MetaSprites=ff[10000]
 
 
-Checkpoint_32_BankViewTable=00000000[100]00001000[100]00002000[100]00003000[100]
+Checkpoint_32_BankViewTable=00000000[60]0000100000000000[9f]00001000[100]00002000[100]00003000[100]
 
 
-Checkpoint_32_BankViewTableUndo=00000000[100]00001000[100]00002000[100]00003000[100]
+Checkpoint_32_BankViewTableUndo=00000000[60]0000100000000000[9f]00001000[100]00002000[100]00003000[100]
 
 
 Checkpoint_8_TileCollisionProperties=00[400]
@@ -503,18 +503,18 @@ Checkpoint_MetatileSet_8x8_props=00[2000]
 Checkpoint_MetatileSet_8x8_propsUndo=00[2000]
 
 
-Checkpoint_MetatileSetLabels_2x2=Unlabeled,Unlabeled,Unlabeled,Unlabeled
-Checkpoint_MetatileSetLabels_2x2Undo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+Checkpoint_MetatileSetLabels_2x2=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+Checkpoint_MetatileSetLabels_2x2Undo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
 
-Checkpoint_MetatileSetLabels_4x4=Unlabeled,Unlabeled,Unlabeled,Unlabeled
-Checkpoint_MetatileSetLabels_4x4Undo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+Checkpoint_MetatileSetLabels_4x4=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+Checkpoint_MetatileSetLabels_4x4Undo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
 
-Checkpoint_MetatileSetLabels_8x8=Unlabeled,Unlabeled
-Checkpoint_MetatileSetLabels_8x8Undo=Unlabeled,Unlabeled
+Checkpoint_MetatileSetLabels_8x8=Unlabeled,Unlabeled
+Checkpoint_MetatileSetLabels_8x8Undo=Unlabeled,Unlabeled
 
-Checkpoint_CHRBankLabels=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+Checkpoint_CHRBankLabels=Unlabeled,Unlabeled,Unlabeled,Unlabeled
 
-Checkpoint_CHRBankLabelsUndo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+Checkpoint_CHRBankLabelsUndo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
 
 
 Checkpoint_32_NTSC_MsprDuration=00000006[100]
@@ -607,14 +607,14 @@ Switch tile 4 ID=251
 
 Switch tile targets:
 ---------------------------------------------------------
-Switch tile 1 target=4096
-Switch tile 2 target=0
-Switch tile 3 target=12288
-Switch tile 4 target=8192
+Switch tile 1 target=0
+Switch tile 2 target=4096
+Switch tile 3 target=8192
+Switch tile 4 target=12288
 
 Switch tile checkboxes:
 ---------------------------------------------------------
 Switch tile 1 checkbox=1
 Switch tile 2 checkbox=1
-Switch tile 3 checkbox=0
-Switch tile 4 checkbox=0
+Switch tile 3 checkbox=1
+Switch tile 4 checkbox=1

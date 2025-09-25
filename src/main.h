@@ -18,6 +18,10 @@ using namespace fixedpoint_literals;
        __typeof__ (b) _b = (b); \
      _a > _b ? _b : _a; })
 
+#define MABS(a) \
+   ({ __typeof__ (a) _a = (a); \
+     _a < 0 ? -_a : _a; }) 
+
 // The different states and any entity can be in.
 enum Entity_States
 {

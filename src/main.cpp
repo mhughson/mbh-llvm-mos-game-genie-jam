@@ -100,6 +100,11 @@ void goto_state(Game_States new_state)
                 ActiveEntities[i].cur_state = Entity_States::UNUSED;
             }
 
+            // Reset player position and state
+            p1.cur_state = Entity_States::ACTIVE;
+            p1.x = 128;
+            p1.y = 120;
+
             ppu_on_all();
             break;
         }
@@ -240,8 +245,11 @@ void update_state_gameplay()
             if (ActiveEntities[i].cur_state == Entity_States::UNUSED)
             {
                 ActiveEntities[i].cur_state = Entity_States::ACTIVE;
-                ActiveEntities[i].x = 128;
-                ActiveEntities[i].y = (uint8_t)rand() % (240 - 16);
+                // put the object at least 64 pixels away from the player, but by picking a value 
+                // up to 128, it should wrap around to the other side without going over 64 pixels
+                // in the other direction.
+                ActiveEntities[i].x = p1.x.as_i() + 64 + ((uint8_t)rand() % 128); //(rand() % 128) + 64;
+                ActiveEntities[i].y = p1.y.as_i() + 64 + ((uint8_t)rand() % 128); //(rand() % 128) + 64;
 
                 ActiveEntities[i].vel_x = 0;
                 ActiveEntities[i].vel_y = 0;
@@ -294,6 +302,27 @@ void update_state_gameplay()
                 {
                     ActiveEntities[i].vel_y += ACCELERATION;
                 }
+            }            
+
+            constexpr uint8_t SCREEN_BORDER = 8;
+            // If approaching border of the screen, reverse direction.
+            // Also cut the velocity in half.
+            if (ActiveEntities[i].vel_x < 0 && ActiveEntities[i].x.as_i() < SCREEN_BORDER)
+            {
+                ActiveEntities[i].vel_x = MABS(ActiveEntities[i].vel_x) / 2;
+            }
+            else if (ActiveEntities[i].vel_x > 0 && ActiveEntities[i].x.as_i() + 16 > (256 - SCREEN_BORDER))
+            {
+                ActiveEntities[i].vel_x = -MABS(ActiveEntities[i].vel_x) / 2;
+            }
+            // Also for the y axis which is 240 pixels high.
+            if (ActiveEntities[i].vel_y < 0 && ActiveEntities[i].y.as_i() < SCREEN_BORDER)
+            {
+                ActiveEntities[i].vel_y = MABS(ActiveEntities[i].vel_y) / 2;
+            }
+            else if (ActiveEntities[i].vel_y > 0 && ActiveEntities[i].y.as_i() + 16 > (240 - SCREEN_BORDER))
+            {
+                ActiveEntities[i].vel_y = -MABS(ActiveEntities[i].vel_y) / 2;
             }
 
             ActiveEntities[i].x += ActiveEntities[i].vel_x;
