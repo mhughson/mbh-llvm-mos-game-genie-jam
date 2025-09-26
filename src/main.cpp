@@ -131,8 +131,12 @@ void goto_state(Game_States new_state)
 
             // Reset player position and state
             p1.cur_state = Entity_States::ACTIVE;
-            p1.x = 128;
-            p1.y = 120;
+            p1.x = 128 - 8;
+            p1.y = 120 - 16;
+            p1.vel_x = 0;
+            p1.vel_y = 0;
+            p1.anim_counter = 0;
+            p1.anim_frame = 0;
 
             ppu_on_all();
             break;
@@ -168,6 +172,10 @@ void update_state_title()
 constexpr fs8_8 p1_VELOCITY_PERFRAME = 0.2_s8_8;
 constexpr fs8_8 p1_VELOCITY_SPEED_LIMIT = 1.0_s8_8;
 constexpr fs8_8 p1_BRAKING_FORCE = 0.1_s8_8;
+
+constexpr uint8_t WALL_OFFSET = 8;
+constexpr uint8_t WALL_OFFSET_RIGHT = 256 - WALL_OFFSET - 16 - 3;
+constexpr uint8_t WALL_OFFSET_BOTTOM = 240 - 32 - 8 - 3;
 
 void update_player()
 {
@@ -238,6 +246,43 @@ void update_player()
     // Finally apply the velocity for the p1 that we calculated
     p1.x = p1.x + p1.vel_x;
     p1.y = p1.y + p1.vel_y;
+
+    if (input & PAD_LEFT)
+    {
+        // did we hit a wall?
+        if (p1.x.as_i() <= WALL_OFFSET)
+        {
+            p1.x = WALL_OFFSET;
+            p1.vel_x = 0;
+        }
+    }
+    if (input & PAD_RIGHT)
+    {
+        // did we hit a wall?
+        if (p1.x.as_i() >= WALL_OFFSET_RIGHT)
+        {
+            p1.x = WALL_OFFSET_RIGHT;
+            p1.vel_x = 0;
+        }
+    }
+    if (input & PAD_UP)
+    {
+        // did we hit a wall?
+        if (p1.y.as_i() <= WALL_OFFSET)
+        {
+            p1.y = WALL_OFFSET;
+            p1.vel_y = 0;
+        }
+    }
+    if (input & PAD_DOWN)
+    {
+        // did we hit a wall?
+        if (p1.y.as_i() >= WALL_OFFSET_BOTTOM)
+        {
+            p1.y = WALL_OFFSET_BOTTOM;
+            p1.vel_y = 0;
+        }
+    }
 
     ++p1.anim_counter;
 
