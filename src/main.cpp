@@ -170,7 +170,7 @@ void update_state_title()
 }
 
 constexpr fs8_8 p1_VELOCITY_PERFRAME = 0.2_s8_8;
-constexpr fs8_8 p1_VELOCITY_SPEED_LIMIT = 1.0_s8_8;
+constexpr fs8_8 p1_VELOCITY_SPEED_LIMIT = 1.2_s8_8;
 constexpr fs8_8 p1_BRAKING_FORCE = 0.1_s8_8;
 
 constexpr uint8_t WALL_OFFSET = 8;
@@ -221,7 +221,7 @@ void update_player()
         }
     }
 
-    if (!move_input_pressed)
+//    if (!move_input_pressed)
     {
         
         // Holding neither, so apply a braking force to stop the p1.
