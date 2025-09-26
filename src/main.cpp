@@ -72,6 +72,8 @@ static uint16_t ticks16 = 0; // 32-bit to avoid quick wrap; NES time constraints
 static uint16_t score = 0;
 static uint16_t hiscore = 0;
 
+static uint8_t ammo_count = 3;
+
 void goto_state(Game_States new_state)
 {
     cur_state = new_state;
@@ -142,6 +144,14 @@ void goto_state(Game_States new_state)
             p1.vel_y = 0;
             p1.anim_counter = 0;
             p1.anim_frame = 0;
+
+            ammo_count = 3;
+
+            for (uint8_t i = 0; i < ammo_count; ++i)
+            {
+                vram_adr(NTADR_A(29 - i, 27));
+                vram_put(0x05); // bullet icon
+            }
 
             ppu_on_all();
             break;
@@ -531,8 +541,13 @@ void update_state_gameplay()
     }
 
     // Was the Zapper pressed this frame, but NOT pressed last frame.
-    if (zapper_pressed && zapper_ready)
+    if (zapper_pressed && zapper_ready && ammo_count > 0)
     {   
+        // Decrease ammo count and update the display
+        --ammo_count;
+        // Clear the one ammo that was fired.
+        one_vram_buffer(0x00, get_ppu_addr(0, (29 - ammo_count) * 8, (27 * 8)));
+
         // TODO: Needed?
         ppu_wait_nmi();
 
