@@ -7,6 +7,7 @@
 #include <fixed_point.h>
 #include <initializer_list>
 #include <neslib.h>
+#include <famitone2.h>
 
 // Add-ons to the neslib, bringing metatile support and more
 #include <nesdoug.h>
