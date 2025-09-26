@@ -14,6 +14,7 @@
 #include <zaplib.h>
 
 // Include our own player update function for the movable sprite.
+#include "metatile.hpp"
 #include "text_render.hpp"
 #include "metasprites.h"
 
@@ -63,6 +64,9 @@ Game_States cur_state = Game_States::STATE_TITLE;
 // Frame tick counter since power-on (incremented once per main loop iteration)
 static uint16_t ticks16 = 0; // 32-bit to avoid quick wrap; NES time constraints minimal
 
+static uint16_t score = 0;
+static uint16_t hiscore = 0;
+
 void goto_state(Game_States new_state)
 {
     cur_state = new_state;
@@ -83,6 +87,12 @@ void goto_state(Game_States new_state)
             vram_adr(NAMETABLE_A);
             vram_unrle(screen_title);   
             ppu_on_all();         
+
+            // Metatile_2_2 test_tile;
+            // test_tile.top = 0x1f;
+            // test_tile.bot = 0x1f;
+
+            // draw_metatile_2_2(Nametable::A, 13, 20, &test_tile); // Flashing "Press Start"
             break;
         }
 
@@ -93,6 +103,25 @@ void goto_state(Game_States new_state)
             ppu_off();
             vram_adr(NAMETABLE_A);
             vram_unrle(screen_gameplay);
+
+            score = 0;
+            render_string(Nametable::A, 2, 2, "000"_l);
+
+            if (hiscore != 0)
+            {
+                Letter score_digits[4] = { 
+                    (Letter)4,
+                    (Letter)((hiscore / 100) % 10), 
+                    (Letter)((hiscore / 10) % 10), 
+                    (Letter)(hiscore % 10) 
+                };
+
+                render_string(Nametable::A, 24, 2, score_digits);                
+            }
+            else
+            {
+                render_string(Nametable::A, 24, 2, "000"_l);
+            }
 
             // Clear out all entities
             for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
@@ -114,6 +143,13 @@ void goto_state(Game_States new_state)
             ppu_off();
             vram_adr(NAMETABLE_A);
             vram_unrle(screen_gameover);
+
+            if (score > hiscore)
+            {
+                // NEW HIGH SCORE
+                hiscore = score;
+            }
+
             ppu_on_all();
             break;
         }
@@ -386,6 +422,20 @@ void update_state_gameplay()
 
                 if (hit_detected)
                 {
+                    // increase score and draw it
+                    ++score;
+                    if (score > 999) score = 999;
+
+                    // Create a temp letter array to hold the score digits
+                    Letter score_digits[4] = { 
+                        (Letter)4,
+                        (Letter)((score / 100) % 10), 
+                        (Letter)((score / 10) % 10), 
+                        (Letter)(score % 10) 
+                    };
+
+                    render_string(Nametable::A, 2, 2, score_digits);
+
                     ActiveEntities[i].cur_state = Entity_States::UNUSED;
                     break;
                 }

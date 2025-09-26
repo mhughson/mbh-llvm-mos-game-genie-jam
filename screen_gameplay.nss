@@ -1,7 +1,7 @@
 NSTssTXT
 
 BtnTiles=0
-BtnChecker=0
+BtnChecker=1
 BtnSelTiles=0
 BtnChrBank1=1
 BtnChrBank2=0
@@ -145,7 +145,7 @@ MetaspritePlayBackCursor=0
 FilterCHR=0
 FilterName=6
 FileNameCHR=
-FileNameName=C:\Users\Matt\Documents\Dev\NES\mbh-llvm-mos-game-genie-jam\screen_gameplay.nrle
+FileNameName=C:\Users\Matt\Documents\Dev\NES\mbh-llvm-mos-game-genie-jam\screen_gameplay
 FileNamePal=
 FileNameMetaSpriteBank=
 FileNameTileProps=
@@ -187,13 +187,13 @@ NameCopy=0f0d0f000f000f000f000f000f000f000f000f000f000f000f000f000f000f000f000f0
 NameUndo=0f[21]0d00[1c]0e0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]00[1e]0f[2]0700[1c]0b0f[21]
 
 
-AttrTable=8000[6]2000[28]8000[6]2000[8]
+AttrTable=00[40]
 
 
 AttrCopy=02[5]0002000200020002000200020002000200020002000200020002000200020002000200020002000200020002[4]00[c]
 
 
-AttrUndo=aa0a[6]aa2200[6]882200[6]882200[6]882200[6]882200[6]88a200[6]a80a[8]
+AttrUndo=00[30]8000[f]
 
 
 MetaSprites=ff[10000]
