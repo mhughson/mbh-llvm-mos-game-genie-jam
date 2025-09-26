@@ -4,6 +4,7 @@
 #include <cstdint>
 
 // Common C NES libary that includes a simple NMI update routine
+#include <cstdio>
 #include <fixed_point.h>
 #include <initializer_list>
 #include <neslib.h>
@@ -18,6 +19,9 @@
 #include "metatile.hpp"
 #include "text_render.hpp"
 #include "metasprites.h"
+
+// define this somewhere in main.c this will write a string one byte a time to $401b
+extern "C" void __putchar(char c) { POKE(0x401b, c); }
 
 // Include a basic nametable thats RLE compressed for the demo
 const unsigned char nametable[] = {
@@ -315,6 +319,60 @@ void update_player()
 
 }
 
+struct SpawnArea
+{
+    uint8_t start_x;
+    uint8_t start_y;
+};
+
+SpawnArea spawn_points[] = 
+{
+    {
+        16, 16,
+    },
+    {
+        128, 16,
+    },
+    {
+        16, 120,
+    },
+    {
+        128, 120,
+    }
+};
+
+SpawnArea spawn_area_collections[2][2][3] =
+{
+    {
+        {
+            // Top left
+            spawn_points[1],
+            spawn_points[2],
+            spawn_points[3],
+        },
+        {
+            // Bottom Left
+            spawn_points[0],
+            spawn_points[1],
+            spawn_points[3],
+        },
+    },
+    {
+        {
+            // Top Right
+            spawn_points[0],
+            spawn_points[2],
+            spawn_points[3],
+        },
+        {
+            // Bottom Right
+            spawn_points[0],
+            spawn_points[1],
+            spawn_points[2],
+        }
+    }
+};
+
 void update_state_gameplay()
 {
     update_player();
@@ -327,11 +385,38 @@ void update_state_gameplay()
             if (ActiveEntities[i].cur_state == Entity_States::UNUSED)
             {
                 ActiveEntities[i].cur_state = Entity_States::ACTIVE;
-                // put the object at least 64 pixels away from the player, but by picking a value 
-                // up to 128, it should wrap around to the other side without going over 64 pixels
-                // in the other direction.
-                ActiveEntities[i].x = p1.x.as_i() + 64 + ((uint8_t)rand() % 128); //(rand() % 128) + 64;
-                ActiveEntities[i].y = p1.y.as_i() + 64 + ((uint8_t)rand() % 128); //(rand() % 128) + 64;
+
+                // uint8_t start_x = (p1.x.as_i() > 128) ? 16 : 128;
+                // uint8_t start_y = (p1.y.as_i() > 120) ? 16 : 120;
+
+                // ActiveEntities[i].x = start_x + ((uint8_t)rand() % (128 - 16));
+                // ActiveEntities[i].y = start_y + ((uint8_t)rand() % (120 - 16));
+
+                // which of the 4 regions is the player in?
+                uint8_t x_region = (p1.x.as_i() / 128);
+                uint8_t y_region = (p1.y.as_i() / 120);
+
+                // use it like this
+                //puts("x: ");
+                // puts("x,y regions:");
+                // putchar('0' + x_region);
+                // putchar(',');
+                // //puts(" y: ");
+                // putchar('0' + y_region);           
+                // puts("");
+
+                // pick a region from the area that exludes the one the player is
+                // in.
+                uint8_t area_choice = (uint8_t)(rand()) % 3;
+
+                // puts("area choice:");
+                // putchar('0' + area_choice);          
+                // puts("");                
+
+                SpawnArea spawn_area = spawn_area_collections[x_region][y_region][area_choice];
+
+                ActiveEntities[i].x = spawn_area.start_x + ((uint8_t)rand() % (128 - 16));
+                ActiveEntities[i].y = spawn_area.start_y + ((uint8_t)rand() % (120 - 16));                
 
                 ActiveEntities[i].vel_x = 0;
                 ActiveEntities[i].vel_y = 0;
