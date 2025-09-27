@@ -1,4 +1,4 @@
-#include "main.h"
+#include "main.hpp"
 
 // Used for standard int size defines
 #include <cstdint>
