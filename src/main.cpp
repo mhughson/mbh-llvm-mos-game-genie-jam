@@ -379,9 +379,10 @@ void goto_state(Game_States new_state)
         case Game_States::STATE_GAMEOVER:
         {
             ppu_off();
+            oam_clear();
             vram_adr(NAMETABLE_A);
             vram_unrle(screen_gameover);
-
+            
             if (score > hiscore)
             {
                 render_string(Nametable::A, 3, 2,  "NEW HIGH SCORE"_l);
@@ -389,8 +390,8 @@ void goto_state(Game_States new_state)
                 // NEW HIGH SCORE
                 hiscore = score;
                 is_highscore = true;
-            }
-
+            }   
+            
             render_string(Nametable::A, 8, 196/8,  "Score"_l);
 
             Letter score_digits[4] = { 
@@ -400,7 +401,7 @@ void goto_state(Game_States new_state)
                 (Letter)(score % 10) 
             };
 
-            render_string(Nametable::A, (128 + 24)/8, 196/8, score_digits);                   
+            render_string(Nametable::A, (128 + 24)/8, 196/8, score_digits);   
 
             ppu_on_all();
             break;
@@ -884,7 +885,8 @@ void update_state_gameplay()
                     ActiveEntities[i].cur_state = Entity_States::UNUSED;
 
                     try_spawn_ammo_pickup(true, ActiveEntities[i].x.as_i() + 6, ActiveEntities[i].y.as_i() + 4);
-                    break;
+                    
+                    //break; // allow multiple enemies to be hit with one shot
                 }
             }
         }
