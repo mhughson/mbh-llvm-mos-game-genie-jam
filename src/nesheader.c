@@ -10,3 +10,5 @@ MAPPER_PRG_ROM_KB(16);
 MAPPER_CHR_ROM_KB(8);
 // For the game jam, we can choose what mirroring to use. Default to vertical mirroring but you can change this.
 MAPPER_USE_VERTICAL_MIRRORING;
+// $8 is the zapper in $4017
+INES_DEFAULT_EXPANSION(0x8); 

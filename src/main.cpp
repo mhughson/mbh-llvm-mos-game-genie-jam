@@ -125,6 +125,7 @@ static uint16_t ticks16 = 0; // 32-bit to avoid quick wrap; NES time constraints
 
 static uint16_t score = 0;
 static uint16_t hiscore = 0;
+static bool is_highscore = false;
 
 static uint8_t ammo_count = 3;
 
@@ -317,6 +318,7 @@ void goto_state(Game_States new_state)
             vram_adr(NAMETABLE_A);
             vram_unrle(screen_gameplay);
 
+            is_highscore = false;
             score = 0;
             render_string(Nametable::A, 2, 2, "000"_l);
 
@@ -374,9 +376,23 @@ void goto_state(Game_States new_state)
 
             if (score > hiscore)
             {
+                render_string(Nametable::A, 3, 2,  "NEW HIGH SCORE"_l);
+
                 // NEW HIGH SCORE
                 hiscore = score;
+                is_highscore = true;
             }
+
+            render_string(Nametable::A, 8, 196/8,  "Score"_l);
+
+            Letter score_digits[4] = { 
+                (Letter)4,
+                (Letter)((score / 100) % 10), 
+                (Letter)((score / 10) % 10), 
+                (Letter)(score % 10) 
+            };
+
+            render_string(Nametable::A, (128 + 24)/8, 196/8, score_digits);                   
 
             ppu_on_all();
             break;
@@ -869,6 +885,11 @@ void update_state_gameplay()
 
 void update_state_gameover()
 {
+    if (is_highscore)
+    {
+        pal_col(3, 0x31 + ((ticks_in_state / 4) % 0x0b));
+    }
+
     if (pad_pressed & (PAD_A | PAD_START) || (zapper_pressed && zapper_ready)) 
     {
         if (ticks_in_state < 60) return;
