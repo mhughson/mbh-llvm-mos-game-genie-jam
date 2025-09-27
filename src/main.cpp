@@ -77,8 +77,8 @@ static uint8_t ammo_count = 3;
 #define ENEMY_SPAWN_TIME 120
 static uint8_t enemy_spawn_timer = 0;
 
-#define AMMO_SPAWN_TIME 240;
-static uint8_t ammo_spawn_timer = 0;
+#define AMMO_SPAWN_TIME (60 * 10)
+static uint16_t ammo_spawn_timer = 0;
 
 void goto_state(Game_States new_state)
 {
@@ -588,6 +588,59 @@ void update_state_gameplay()
             ActiveEntities[unused_index].anim_frame = 0;
         }
     }
+
+    --ammo_spawn_timer;
+
+    if (ammo_spawn_timer == 0)
+    {
+        ammo_spawn_timer = AMMO_SPAWN_TIME;
+
+        // First, count how many active ammo pickups there are and store a valid index
+        // for an unused slot.
+        unsigned char active_count = 0;
+        unsigned char unused_index = NUM_ENTITIES; // Invalid index.
+
+        for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
+        {
+            if (ActiveEntities[i].cur_state == Entity_States::ACTIVE)
+            {
+                if (ActiveEntities[i].type == ENTITY_TYPE_AMMO)
+                {
+                    ++active_count;
+                }
+            }
+            else
+            {
+                unused_index = i;
+            }
+        }
+
+        // If we have an unused slot, and we have less than 2 active ammo pickups,
+        if (unused_index < NUM_ENTITIES && active_count == 0)
+        {
+            ActiveEntities[unused_index].cur_state = Entity_States::ACTIVE;
+            ActiveEntities[unused_index].type = ENTITY_TYPE_AMMO;
+
+            // which of the 4 regions is the player in?
+            uint8_t x_region = (p1.x.as_i() / 128);
+            uint8_t y_region = (p1.y.as_i() / 120);
+
+            // pick a region from the area that exludes the one the player is
+            // in.
+            uint8_t area_choice = (uint8_t)(rand()) % 3;
+
+            SpawnArea spawn_area = spawn_area_collections[x_region][y_region][area_choice];
+
+            ActiveEntities[unused_index].x = spawn_area.start_x + ((uint8_t)rand() % (128 - 16));
+            ActiveEntities[unused_index].y = spawn_area.start_y + ((uint8_t)rand() % (120 - 16));                
+
+            ActiveEntities[unused_index].vel_x = 0;
+            ActiveEntities[unused_index].vel_y = 0;
+            ActiveEntities[unused_index].anim_counter = 0;
+            ActiveEntities[unused_index].anim_frame = 0;
+        }
+    }
+
 
     // DEBUG: Spawn enemies to shoot.
     if (pad_pressed & PAD_B)
