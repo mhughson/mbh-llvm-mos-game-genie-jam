@@ -6,6 +6,7 @@
 using namespace fixedpoint_literals;
 
 #define NUM_ENTITIES 8
+#define MAX_AMMO 10
 
 // Custom MIN/MAX macros that do not double evaluate the inputs
 #define MMAX(a,b) \

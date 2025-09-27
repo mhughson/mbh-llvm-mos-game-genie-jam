@@ -44,6 +44,60 @@ const unsigned char screen_gameover[] = {
 
 const unsigned char palette_metaspr_a[16]={ 0x0f,0x00,0x10,0x30,0x0f,0x0c,0x21,0x32,0x0f,0x05,0x16,0x27,0x0f,0x0b,0x1a,0x29 };
 
+struct SpawnArea
+{
+    uint8_t start_x;
+    uint8_t start_y;
+};
+
+SpawnArea spawn_points[] = 
+{
+    {
+        16, 16,
+    },
+    {
+        128, 16,
+    },
+    {
+        16, 120,
+    },
+    {
+        128, 120,
+    }
+};
+
+SpawnArea spawn_area_collections[2][2][3] =
+{
+    {
+        {
+            // Top left
+            spawn_points[1],
+            spawn_points[2],
+            spawn_points[3],
+        },
+        {
+            // Bottom Left
+            spawn_points[0],
+            spawn_points[1],
+            spawn_points[3],
+        },
+    },
+    {
+        {
+            // Top Right
+            spawn_points[0],
+            spawn_points[2],
+            spawn_points[3],
+        },
+        {
+            // Bottom Right
+            spawn_points[0],
+            spawn_points[1],
+            spawn_points[2],
+        }
+    }
+};
+
 // Tracking Zapper State
 static uint8_t zapper_pressed = 0;
 static uint8_t zapper_ready = 0; //wait till it's 0
@@ -79,6 +133,61 @@ static uint8_t enemy_spawn_timer = 0;
 
 #define AMMO_SPAWN_TIME (60 * 10)
 static uint16_t ammo_spawn_timer = 0;
+
+void try_spawn_ammo_pickup()
+{
+    // First, count how many active ammo pickups there are and store a valid index
+    // for an unused slot.
+    unsigned char active_count = 0;
+    unsigned char unused_index = NUM_ENTITIES; // Invalid index.
+
+    for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
+    {
+        if (ActiveEntities[i].cur_state == Entity_States::ACTIVE)
+        {
+            if (ActiveEntities[i].type == ENTITY_TYPE_AMMO)
+            {
+                ++active_count;
+            }
+        }
+        else
+        {
+            unused_index = i;
+        }
+    }
+
+    // If we have an unused slot, and we have less than 2 active ammo pickups,
+    if (unused_index < NUM_ENTITIES && active_count == 0 && ammo_count < MAX_AMMO)
+    {
+        // Spawn a new ammo pickup.
+        // Find a spawn area that is not the one the player is currently in.
+        // The screen is divided into 4 quadrants, and we pick one of the other
+        // 3 quadrants randomly.
+
+        // Mark the entity as active and of type ammo.
+    
+        ActiveEntities[unused_index].cur_state = Entity_States::ACTIVE;
+        ActiveEntities[unused_index].type = ENTITY_TYPE_AMMO;
+
+        // which of the 4 regions is the player in?
+        uint8_t x_region = (p1.x.as_i() / 128);
+        uint8_t y_region = (p1.y.as_i() / 120);
+
+        // pick a region from the area that exludes the one the player is
+        // in.
+        uint8_t area_choice = (uint8_t)(rand()) % 3;
+
+        SpawnArea spawn_area = spawn_area_collections[x_region][y_region][area_choice];
+
+        ActiveEntities[unused_index].x = spawn_area.start_x + ((uint8_t)rand() % (128 - 16));
+        ActiveEntities[unused_index].y = spawn_area.start_y + ((uint8_t)rand() % (120 - 16));                
+
+        ActiveEntities[unused_index].vel_x = 0;
+        ActiveEntities[unused_index].vel_y = 0;
+        ActiveEntities[unused_index].anim_counter = 0;
+        ActiveEntities[unused_index].anim_frame = 0;
+    }
+}
 
 void goto_state(Game_States new_state)
 {
@@ -338,60 +447,6 @@ void update_player()
 
 }
 
-struct SpawnArea
-{
-    uint8_t start_x;
-    uint8_t start_y;
-};
-
-SpawnArea spawn_points[] = 
-{
-    {
-        16, 16,
-    },
-    {
-        128, 16,
-    },
-    {
-        16, 120,
-    },
-    {
-        128, 120,
-    }
-};
-
-SpawnArea spawn_area_collections[2][2][3] =
-{
-    {
-        {
-            // Top left
-            spawn_points[1],
-            spawn_points[2],
-            spawn_points[3],
-        },
-        {
-            // Bottom Left
-            spawn_points[0],
-            spawn_points[1],
-            spawn_points[3],
-        },
-    },
-    {
-        {
-            // Top Right
-            spawn_points[0],
-            spawn_points[2],
-            spawn_points[3],
-        },
-        {
-            // Bottom Right
-            spawn_points[0],
-            spawn_points[1],
-            spawn_points[2],
-        }
-    }
-};
-
 void update_enemy(Entity& Object)
 {
     constexpr fs8_8 MAX_SPEED = 5.0_s8_8;
@@ -506,7 +561,7 @@ void update_ammo_pickup(Entity& Object)
     if (isOverlap)
     {
         // Give ammo and update this location on the ammo count display.
-        if (ammo_count < 9)
+        if (ammo_count < MAX_AMMO) // this should always pass
         {
             // Update the screen first so that we draw an ammo on the currently
             // empty slot.
@@ -595,50 +650,7 @@ void update_state_gameplay()
     {
         ammo_spawn_timer = AMMO_SPAWN_TIME;
 
-        // First, count how many active ammo pickups there are and store a valid index
-        // for an unused slot.
-        unsigned char active_count = 0;
-        unsigned char unused_index = NUM_ENTITIES; // Invalid index.
-
-        for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
-        {
-            if (ActiveEntities[i].cur_state == Entity_States::ACTIVE)
-            {
-                if (ActiveEntities[i].type == ENTITY_TYPE_AMMO)
-                {
-                    ++active_count;
-                }
-            }
-            else
-            {
-                unused_index = i;
-            }
-        }
-
-        // If we have an unused slot, and we have less than 2 active ammo pickups,
-        if (unused_index < NUM_ENTITIES && active_count == 0)
-        {
-            ActiveEntities[unused_index].cur_state = Entity_States::ACTIVE;
-            ActiveEntities[unused_index].type = ENTITY_TYPE_AMMO;
-
-            // which of the 4 regions is the player in?
-            uint8_t x_region = (p1.x.as_i() / 128);
-            uint8_t y_region = (p1.y.as_i() / 120);
-
-            // pick a region from the area that exludes the one the player is
-            // in.
-            uint8_t area_choice = (uint8_t)(rand()) % 3;
-
-            SpawnArea spawn_area = spawn_area_collections[x_region][y_region][area_choice];
-
-            ActiveEntities[unused_index].x = spawn_area.start_x + ((uint8_t)rand() % (128 - 16));
-            ActiveEntities[unused_index].y = spawn_area.start_y + ((uint8_t)rand() % (120 - 16));                
-
-            ActiveEntities[unused_index].vel_x = 0;
-            ActiveEntities[unused_index].vel_y = 0;
-            ActiveEntities[unused_index].anim_counter = 0;
-            ActiveEntities[unused_index].anim_frame = 0;
-        }
+        try_spawn_ammo_pickup();
     }
 
 
@@ -696,34 +708,7 @@ void update_state_gameplay()
     // DEBUG: Spawn ammo
     if (pad_pressed & PAD_A)
     {
-        for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
-        {
-            if (ActiveEntities[i].cur_state == Entity_States::UNUSED)
-            {
-                ActiveEntities[i].cur_state = Entity_States::ACTIVE;
-                ActiveEntities[i].type = ENTITY_TYPE_AMMO;
-
-                // which of the 4 regions is the player in?
-                uint8_t x_region = (p1.x.as_i() / 128);
-                uint8_t y_region = (p1.y.as_i() / 120);
-
-                // pick a region from the area that exludes the one the player is
-                // in.
-                uint8_t area_choice = (uint8_t)(rand()) % 3;
-
-                SpawnArea spawn_area = spawn_area_collections[x_region][y_region][area_choice];
-
-                ActiveEntities[i].x = spawn_area.start_x + ((uint8_t)rand() % (128 - 16));
-                ActiveEntities[i].y = spawn_area.start_y + ((uint8_t)rand() % (120 - 16));                
-
-                ActiveEntities[i].vel_x = 0;
-                ActiveEntities[i].vel_y = 0;
-                ActiveEntities[i].anim_counter = 0;
-                ActiveEntities[i].anim_frame = 0;
-
-                break;
-            }
-        }
+        try_spawn_ammo_pickup();
     }    
 
     if (pad_pressed & PAD_SELECT)
