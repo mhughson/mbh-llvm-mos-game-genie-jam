@@ -77,6 +77,9 @@ static uint8_t ammo_count = 3;
 #define ENEMY_SPAWN_TIME 120
 static uint8_t enemy_spawn_timer = 0;
 
+#define AMMO_SPAWN_TIME 240;
+static uint8_t ammo_spawn_timer = 0;
+
 void goto_state(Game_States new_state)
 {
     cur_state = new_state;
@@ -151,6 +154,7 @@ void goto_state(Game_States new_state)
             ammo_count = 3;
 
             enemy_spawn_timer = ENEMY_SPAWN_TIME;
+            ammo_spawn_timer = AMMO_SPAWN_TIME;
 
             for (uint8_t i = 0; i < ammo_count; ++i)
             {
@@ -388,6 +392,147 @@ SpawnArea spawn_area_collections[2][2][3] =
     }
 };
 
+void update_enemy(Entity& Object)
+{
+    constexpr fs8_8 MAX_SPEED = 5.0_s8_8;
+    constexpr fs8_8 ACCELERATION = 0.01_s8_8;
+
+    if (p1.x.as_i() < Object.x.as_i())
+    {
+        if (Object.vel_x > -MAX_SPEED) 
+        {
+            Object.vel_x -= ACCELERATION;
+        }   
+    }
+    else if (p1.x.as_i() > Object.x.as_i())
+    {
+        if (Object.vel_x < MAX_SPEED) 
+        {
+            Object.vel_x += ACCELERATION;
+        }
+    }
+
+    if ((p1.y.as_i() + 16) < Object.y.as_i())
+    {
+        if (Object.vel_y > -MAX_SPEED) 
+        {
+            Object.vel_y -= ACCELERATION;
+        }
+    }
+    else if ((p1.y.as_i() + 16) > Object.y.as_i())
+    {
+        if (Object.vel_y < MAX_SPEED) 
+        {
+            Object.vel_y += ACCELERATION;
+        }
+    }            
+
+    constexpr uint8_t SCREEN_BORDER = 8;
+    // If approaching border of the screen, reverse direction.
+    // Also cut the velocity in half.
+    if (Object.vel_x < 0 && Object.x.as_i() < SCREEN_BORDER)
+    {
+        Object.vel_x = MABS(Object.vel_x) / 2;
+    }
+    else if (Object.vel_x > 0 && Object.x.as_i() + 16 > (256 - SCREEN_BORDER))
+    {
+        Object.vel_x = -MABS(Object.vel_x) / 2;
+    }
+    // Also for the y axis which is 240 pixels high.
+    if (Object.vel_y < 0 && Object.y.as_i() < SCREEN_BORDER)
+    {
+        Object.vel_y = MABS(Object.vel_y) / 2;
+    }
+    else if (Object.vel_y > 0 && Object.y.as_i() + 16 > (240 - SCREEN_BORDER))
+    {
+        Object.vel_y = -MABS(Object.vel_y) / 2;
+    }
+
+    Object.x += Object.vel_x;
+    Object.y += Object.vel_y;
+
+    // Is the center point of the entity colliding with the player?
+    // Note: The player and entity have top left origins.
+    //       The player is 32x16, and we want to collide with the
+    //       bottom 16x16 area, so we offset the player's y position by 16.
+    if (   (p1.x.as_i() + 8 >= Object.x.as_i())
+        && (p1.x.as_i() <= Object.x.as_i() + 8)
+        && (p1.y.as_i() + 16 + 8 >= Object.y.as_i())
+        && (p1.y.as_i() + 16 <= Object.y.as_i() + 8))
+    {
+        // Collision detected, go to game over state.
+        goto_state(STATE_GAMEOVER);
+        return;
+    }
+
+    ++Object.anim_counter;
+
+    if (Object.anim_counter > 5)
+    {
+        Object.anim_counter = 0;
+        ++Object.anim_frame;
+
+        if (Object.anim_frame > 1)
+        {
+            Object.anim_frame = 0;
+        }
+    }
+
+    oam_meta_spr(
+        Object.x.as_i(), 
+        Object.y.as_i(), 
+        metaspr_list[1 + Object.anim_frame]);
+}
+
+void update_ammo_pickup(Entity& Object)
+{
+    // Not really needed since these don't move, but just keep for now.
+    Object.x += Object.vel_x;
+    Object.y += Object.vel_y;
+
+    #define PLAYER_WIDTH 16
+    #define PLAYER_HEIGHT 32
+    #define AMMO_WIDTH 8
+    #define AMMO_HEIGHT 8
+
+    // is the right edge of the player left of the left edge of the object?
+    bool isLeft     = (p1.x.as_i() + PLAYER_WIDTH) < Object.x.as_i();
+    bool isRight    = (p1.x.as_i()) > (Object.x.as_i() + AMMO_WIDTH);
+    bool isAbove    = (p1.y.as_i() + PLAYER_HEIGHT) < Object.y.as_i();
+    bool isBelow    = (p1.y.as_i()) > (Object.y.as_i() + AMMO_HEIGHT);
+
+    bool isOverlap = !(isLeft || isRight || isAbove || isBelow);
+
+    if (isOverlap)
+    {
+        // Give ammo and update this location on the ammo count display.
+        if (ammo_count < 9)
+        {
+            // Update the screen first so that we draw an ammo on the currently
+            // empty slot.
+            one_vram_buffer(0x05, get_ppu_addr(0, (29 - ammo_count) * 8, (27 * 8)));
+            ++ammo_count;
+
+            Object.cur_state = Entity_States::UNUSED;
+        }
+    }
+
+    ++Object.anim_counter;
+
+    if (Object.anim_counter > 5)
+    {
+        Object.anim_counter = 0;
+        ++Object.anim_frame;
+
+        if (Object.anim_frame > 1)
+        {
+            Object.anim_frame = 0;
+        }
+    }
+
+    oam_spr(Object.x.as_i(), Object.y.as_i(), 0x05, 0); // Simple single-sprite bullet icon
+}
+
 void update_state_gameplay()
 {
     update_player();
@@ -495,106 +640,67 @@ void update_state_gameplay()
         }
     }
 
+    // DEBUG: Spawn ammo
+    if (pad_pressed & PAD_A)
+    {
+        for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
+        {
+            if (ActiveEntities[i].cur_state == Entity_States::UNUSED)
+            {
+                ActiveEntities[i].cur_state = Entity_States::ACTIVE;
+                ActiveEntities[i].type = ENTITY_TYPE_AMMO;
+
+                // which of the 4 regions is the player in?
+                uint8_t x_region = (p1.x.as_i() / 128);
+                uint8_t y_region = (p1.y.as_i() / 120);
+
+                // pick a region from the area that exludes the one the player is
+                // in.
+                uint8_t area_choice = (uint8_t)(rand()) % 3;
+
+                SpawnArea spawn_area = spawn_area_collections[x_region][y_region][area_choice];
+
+                ActiveEntities[i].x = spawn_area.start_x + ((uint8_t)rand() % (128 - 16));
+                ActiveEntities[i].y = spawn_area.start_y + ((uint8_t)rand() % (120 - 16));                
+
+                ActiveEntities[i].vel_x = 0;
+                ActiveEntities[i].vel_y = 0;
+                ActiveEntities[i].anim_counter = 0;
+                ActiveEntities[i].anim_frame = 0;
+
+                break;
+            }
+        }
+    }    
+
     if (pad_pressed & PAD_SELECT)
     {
         goto_state(STATE_GAMEOVER);
         return;
     }   
 
-    constexpr fs8_8 MAX_SPEED = 5.0_s8_8;
-    constexpr fs8_8 ACCELERATION = 0.01_s8_8;
-
     // Update all the entities and draw them to the screen.
     for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
     {
         if (ActiveEntities[i].cur_state != Entity_States::UNUSED)
         {
-            if (p1.x.as_i() < ActiveEntities[i].x.as_i())
+            switch (ActiveEntities[i].type) 
             {
-                if (ActiveEntities[i].vel_x > -MAX_SPEED) 
+                case ENTITY_TYPE_ENEMY:
                 {
-                    ActiveEntities[i].vel_x -= ACCELERATION;
-                }   
-            }
-            else if (p1.x.as_i() > ActiveEntities[i].x.as_i())
-            {
-                if (ActiveEntities[i].vel_x < MAX_SPEED) 
-                {
-                    ActiveEntities[i].vel_x += ACCELERATION;
+                    update_enemy(ActiveEntities[i]);
+                    break;
                 }
-            }
 
-            if ((p1.y.as_i() + 16) < ActiveEntities[i].y.as_i())
-            {
-                if (ActiveEntities[i].vel_y > -MAX_SPEED) 
+                case ENTITY_TYPE_AMMO:
                 {
-                    ActiveEntities[i].vel_y -= ACCELERATION;
+                    update_ammo_pickup(ActiveEntities[i]);
+                    break;
                 }
+
+                default:
+                    break;
             }
-            else if ((p1.y.as_i() + 16) > ActiveEntities[i].y.as_i())
-            {
-                if (ActiveEntities[i].vel_y < MAX_SPEED) 
-                {
-                    ActiveEntities[i].vel_y += ACCELERATION;
-                }
-            }            
-
-            constexpr uint8_t SCREEN_BORDER = 8;
-            // If approaching border of the screen, reverse direction.
-            // Also cut the velocity in half.
-            if (ActiveEntities[i].vel_x < 0 && ActiveEntities[i].x.as_i() < SCREEN_BORDER)
-            {
-                ActiveEntities[i].vel_x = MABS(ActiveEntities[i].vel_x) / 2;
-            }
-            else if (ActiveEntities[i].vel_x > 0 && ActiveEntities[i].x.as_i() + 16 > (256 - SCREEN_BORDER))
-            {
-                ActiveEntities[i].vel_x = -MABS(ActiveEntities[i].vel_x) / 2;
-            }
-            // Also for the y axis which is 240 pixels high.
-            if (ActiveEntities[i].vel_y < 0 && ActiveEntities[i].y.as_i() < SCREEN_BORDER)
-            {
-                ActiveEntities[i].vel_y = MABS(ActiveEntities[i].vel_y) / 2;
-            }
-            else if (ActiveEntities[i].vel_y > 0 && ActiveEntities[i].y.as_i() + 16 > (240 - SCREEN_BORDER))
-            {
-                ActiveEntities[i].vel_y = -MABS(ActiveEntities[i].vel_y) / 2;
-            }
-
-            ActiveEntities[i].x += ActiveEntities[i].vel_x;
-            ActiveEntities[i].y += ActiveEntities[i].vel_y;
-
-
-            // Is the center point of the entity colliding with the player?
-            // Note: The player and entity have top left origins.
-            //       The player is 32x16, and we want to collide with the
-            //       bottom 16x16 area, so we offset the player's y position by 16.
-            if (   (p1.x.as_i() + 8 >= ActiveEntities[i].x.as_i())
-                && (p1.x.as_i() <= ActiveEntities[i].x.as_i() + 8)
-                && (p1.y.as_i() + 16 + 8 >= ActiveEntities[i].y.as_i())
-                && (p1.y.as_i() + 16 <= ActiveEntities[i].y.as_i() + 8))
-            {
-                // Collision detected, go to game over state.
-                goto_state(STATE_GAMEOVER);
-                return;
-            }
-
-
-
-
-            ++ActiveEntities[i].anim_counter;
-
-            if (ActiveEntities[i].anim_counter > 5)
-            {
-                ActiveEntities[i].anim_counter = 0;
-                ++ActiveEntities[i].anim_frame;
-
-                if (ActiveEntities[i].anim_frame > 1)
-                {
-                    ActiveEntities[i].anim_frame = 0;
-                }
-            }
-
-            oam_meta_spr(ActiveEntities[i].x.as_i(), ActiveEntities[i].y.as_i(), metaspr_list[1 + ActiveEntities[i].anim_frame]);
         }
     }
 
