@@ -138,7 +138,7 @@ static uint16_t ticks_in_state = 0;
 
 void update_player();
 
-void try_spawn_ammo_pickup()
+void try_spawn_ammo_pickup(bool ignore_active_count = false)
 {
     // First, count how many active ammo pickups there are and store a valid index
     // for an unused slot.
@@ -161,7 +161,7 @@ void try_spawn_ammo_pickup()
     }
 
     // If we have an unused slot, and we have less than 2 active ammo pickups,
-    if (unused_index < NUM_ENTITIES && active_count == 0 && ammo_count < MAX_AMMO)
+    if (unused_index < NUM_ENTITIES && (active_count == 0 || ignore_active_count) && ammo_count < MAX_AMMO)
     {
         // Spawn a new ammo pickup.
         // Find a spawn area that is not the one the player is currently in.
@@ -858,6 +858,8 @@ void update_state_gameplay()
                     render_string(Nametable::A, 2, 2, score_digits);
 
                     ActiveEntities[i].cur_state = Entity_States::UNUSED;
+
+                    try_spawn_ammo_pickup(true);
                     break;
                 }
             }
