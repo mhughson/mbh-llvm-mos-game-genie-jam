@@ -847,6 +847,9 @@ void update_state_gameplay()
         // Clear the one ammo that was fired.
         one_vram_buffer(0x00, get_ppu_addr(0, (29 - ammo_count) * 8, (27 * 8)));
 
+        // use the ppu mask to disable the background
+        ppu_mask(MASK_SPR);
+
         // TODO: Needed?
         ppu_wait_nmi();
 
@@ -872,6 +875,9 @@ void update_state_gameplay()
                     ++score;
                     if (score > 999) score = 999;
 
+                    // reset the timer so that the new enemy doesn't spawn immediately
+                    enemy_spawn_timer = ENEMY_SPAWN_TIME / 2;
+
                     // Create a temp letter array to hold the score digits
                     Letter score_digits[4] = { 
                         (Letter)4,
@@ -890,6 +896,8 @@ void update_state_gameplay()
                 }
             }
         }
+
+        ppu_mask(MASK_SPR | MASK_BG | MASK_EDGE_BG | MASK_EDGE_SPR);
     }        
 }
 
