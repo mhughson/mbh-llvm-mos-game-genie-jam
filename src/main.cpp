@@ -134,6 +134,8 @@ static uint8_t enemy_spawn_timer = 0;
 #define AMMO_SPAWN_TIME (60 * 10)
 static uint16_t ammo_spawn_timer = 0;
 
+static uint16_t ticks_in_state = 0;
+
 void try_spawn_ammo_pickup()
 {
     // First, count how many active ammo pickups there are and store a valid index
@@ -191,6 +193,8 @@ void try_spawn_ammo_pickup()
 
 void goto_state(Game_States new_state)
 {
+    ticks_in_state = 0;
+
     cur_state = new_state;
 
     switch (cur_state) 
@@ -797,6 +801,8 @@ void update_state_gameover()
 {
     if (pad_pressed & (PAD_A | PAD_START) || (zapper_pressed && zapper_ready)) 
     {
+        if (ticks_in_state < 60) return;
+        
         goto_state(STATE_TITLE);
         return;
     }
@@ -848,6 +854,7 @@ int main()
     {
         // Count frames elapsed since boot (before reading input so timing differences matter for seeding)
         ++ticks16;
+        ++ticks_in_state;
         
         // Get the input state.
         // NOTE: This will return the "trigger/pressed" state, but pad_state
