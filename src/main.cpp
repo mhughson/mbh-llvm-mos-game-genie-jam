@@ -295,6 +295,8 @@ void goto_state(Game_States new_state)
             p1.vel_y = 0;
             p1.anim_counter = 0;
             p1.anim_frame = 0;          
+
+            ammo_count = 3;
             
             for (uint8_t i = 0; i < ammo_count; ++i)
             {
@@ -698,7 +700,7 @@ void update_ammo_pickup(Entity& Object)
         }
     }
 
-    oam_spr(Object.x.as_i(), Object.y.as_i(), 0x05, 0); // Simple single-sprite bullet icon
+    oam_spr(Object.x.as_i(), Object.y.as_i(), 0x05, 2); // Simple single-sprite bullet icon
 }
 
 void update_state_gameplay()
