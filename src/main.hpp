@@ -62,6 +62,7 @@ public:
 enum Game_States
 {
     STATE_TITLE = 0,
+    STATE_TUTORIAL,
     STATE_GAMEPLAY,
     STATE_GAMEOVER,
 };

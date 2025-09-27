@@ -136,6 +136,8 @@ static uint16_t ammo_spawn_timer = 0;
 
 static uint16_t ticks_in_state = 0;
 
+void update_player();
+
 void try_spawn_ammo_pickup()
 {
     // First, count how many active ammo pickups there are and store a valid index
@@ -191,6 +193,54 @@ void try_spawn_ammo_pickup()
     }
 }
 
+void try_spawn_enemy()
+{
+    // First, count how many active enemies there are and store a valid index
+    // for an unused slot.
+    unsigned char active_count = 0;
+    unsigned char unused_index = NUM_ENTITIES; // Invalid index.
+
+    for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
+    {
+        if (ActiveEntities[i].cur_state == Entity_States::ACTIVE)
+        {
+            if (ActiveEntities[i].type == ENTITY_TYPE_ENEMY)
+            {
+                ++active_count;
+            }
+        }
+        else
+        {
+            unused_index = i;
+        }
+    }
+
+    // If we have an unused slot, and we have less than 4 active enemies,
+    if (unused_index < NUM_ENTITIES && active_count < 4)
+    {
+        ActiveEntities[unused_index].cur_state = Entity_States::ACTIVE;
+        ActiveEntities[unused_index].type = ENTITY_TYPE_ENEMY;
+
+        // which of the 4 regions is the player in?
+        uint8_t x_region = (p1.x.as_i() / 128);
+        uint8_t y_region = (p1.y.as_i() / 120);
+
+        // pick a region from the area that exludes the one the player is
+        // in.
+        uint8_t area_choice = (uint8_t)(rand()) % 3;
+
+        SpawnArea spawn_area = spawn_area_collections[x_region][y_region][area_choice];
+
+        ActiveEntities[unused_index].x = spawn_area.start_x + ((uint8_t)rand() % (128 - 16));
+        ActiveEntities[unused_index].y = spawn_area.start_y + ((uint8_t)rand() % (120 - 16));                
+
+        ActiveEntities[unused_index].vel_x = 0;
+        ActiveEntities[unused_index].vel_y = 0;
+        ActiveEntities[unused_index].anim_counter = 0;
+        ActiveEntities[unused_index].anim_frame = 0;
+    }
+}
+
 void goto_state(Game_States new_state)
 {
     ticks_in_state = 0;
@@ -220,6 +270,41 @@ void goto_state(Game_States new_state)
 
             // draw_metatile_2_2(Nametable::A, 13, 20, &test_tile); // Flashing "Press Start"
             break;
+        }
+
+        case Game_States::STATE_TUTORIAL:
+        {
+            ppu_off();
+            vram_adr(NAMETABLE_A);
+            vram_unrle(screen_gameplay);        
+
+                                                                //0000000000000000
+            render_string(Nametable::A, 2, 4,  " MOVE with DPAD"_l);
+            render_string(Nametable::A, 2, 12, " SHOOT with the"_l);
+            render_string(Nametable::A, 2, 16, "        ZAPPER"_l);
+
+            render_string(Nametable::A, 18, 26, "AMMO"_l);
+
+            // allow vram to flush
+            ppu_wait_nmi();
+
+            p1.cur_state = Entity_States::ACTIVE;
+            p1.x = 128 - 8;
+            p1.y = 180 - 16;
+            p1.vel_x = 0;
+            p1.vel_y = 0;
+            p1.anim_counter = 0;
+            p1.anim_frame = 0;          
+            
+            for (uint8_t i = 0; i < ammo_count; ++i)
+            {
+                vram_adr(NTADR_A(29 - i, 27));
+                vram_put(0x05); // bullet icon
+            }            
+            
+            ppu_on_all();         
+
+            break;            
         }
 
         case Game_States::STATE_GAMEPLAY:
@@ -299,6 +384,18 @@ void goto_state(Game_States new_state)
 
 void update_state_title()
 {
+    if (pad_pressed & (PAD_A | PAD_START) || (zapper_pressed && zapper_ready)) 
+    {
+        goto_state(STATE_TUTORIAL);
+        return;
+    }
+}
+
+void update_state_tutorial()
+{
+    
+    update_player();
+
     if (pad_pressed & (PAD_A | PAD_START) || (zapper_pressed && zapper_ready)) 
     {
         goto_state(STATE_GAMEPLAY);
@@ -404,11 +501,23 @@ void update_player()
     }
     if (input & PAD_UP)
     {
-        // did we hit a wall?
-        if (p1.y.as_i() <= WALL_OFFSET)
+        if (cur_state == STATE_TUTORIAL)
         {
-            p1.y = WALL_OFFSET;
-            p1.vel_y = 0;
+            // did we hit a wall?
+            if (p1.y.as_i() <= (140 + WALL_OFFSET))
+            {
+                p1.y = (140 + WALL_OFFSET);
+                p1.vel_y = 0;
+            }
+        }
+        else
+        {
+            // did we hit a wall?
+            if (p1.y.as_i() <= WALL_OFFSET)
+            {
+                p1.y = WALL_OFFSET;
+                p1.vel_y = 0;
+            }
         }
     }
     if (input & PAD_DOWN)
@@ -602,50 +711,7 @@ void update_state_gameplay()
     {
         enemy_spawn_timer = ENEMY_SPAWN_TIME;
 
-        // First, count how many active enemies there are and store a valid index
-        // for an unused slot.
-        unsigned char active_count = 0;
-        unsigned char unused_index = NUM_ENTITIES; // Invalid index.
-
-        for (unsigned char i = 0; i < NUM_ENTITIES; ++i)
-        {
-            if (ActiveEntities[i].cur_state == Entity_States::ACTIVE)
-            {
-                if (ActiveEntities[i].type == ENTITY_TYPE_ENEMY)
-                {
-                    ++active_count;
-                }
-            }
-            else
-            {
-                unused_index = i;
-            }
-        }
-
-        // If we have an unused slot, and we have less than 4 active enemies,
-        if (unused_index < NUM_ENTITIES && active_count < 4)
-        {
-            ActiveEntities[unused_index].cur_state = Entity_States::ACTIVE;
-            ActiveEntities[unused_index].type = ENTITY_TYPE_ENEMY;
-
-            // which of the 4 regions is the player in?
-            uint8_t x_region = (p1.x.as_i() / 128);
-            uint8_t y_region = (p1.y.as_i() / 120);
-
-            // pick a region from the area that exludes the one the player is
-            // in.
-            uint8_t area_choice = (uint8_t)(rand()) % 3;
-
-            SpawnArea spawn_area = spawn_area_collections[x_region][y_region][area_choice];
-
-            ActiveEntities[unused_index].x = spawn_area.start_x + ((uint8_t)rand() % (128 - 16));
-            ActiveEntities[unused_index].y = spawn_area.start_y + ((uint8_t)rand() % (120 - 16));                
-
-            ActiveEntities[unused_index].vel_x = 0;
-            ActiveEntities[unused_index].vel_y = 0;
-            ActiveEntities[unused_index].anim_counter = 0;
-            ActiveEntities[unused_index].anim_frame = 0;
-        }
+        try_spawn_enemy();
     }
 
     --ammo_spawn_timer;
@@ -877,6 +943,12 @@ int main()
             case STATE_TITLE:
             {
                 update_state_title();
+                break;
+            }
+
+            case STATE_TUTORIAL:
+            {
+                update_state_tutorial();
                 break;
             }
 
