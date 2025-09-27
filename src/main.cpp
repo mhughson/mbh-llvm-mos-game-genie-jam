@@ -407,7 +407,10 @@ void update_state_gameplay()
         {
             if (ActiveEntities[i].cur_state == Entity_States::ACTIVE)
             {
-                ++active_count;
+                if (ActiveEntities[i].type == ENTITY_TYPE_ENEMY)
+                {
+                    ++active_count;
+                }
             }
             else
             {
@@ -419,6 +422,7 @@ void update_state_gameplay()
         if (unused_index < NUM_ENTITIES && active_count < 4)
         {
             ActiveEntities[unused_index].cur_state = Entity_States::ACTIVE;
+            ActiveEntities[unused_index].type = ENTITY_TYPE_ENEMY;
 
             // which of the 4 regions is the player in?
             uint8_t x_region = (p1.x.as_i() / 128);
@@ -436,6 +440,7 @@ void update_state_gameplay()
             ActiveEntities[unused_index].vel_x = 0;
             ActiveEntities[unused_index].vel_y = 0;
             ActiveEntities[unused_index].anim_counter = 0;
+            ActiveEntities[unused_index].anim_frame = 0;
         }
     }
 
@@ -447,6 +452,7 @@ void update_state_gameplay()
             if (ActiveEntities[i].cur_state == Entity_States::UNUSED)
             {
                 ActiveEntities[i].cur_state = Entity_States::ACTIVE;
+                ActiveEntities[i].type = ENTITY_TYPE_ENEMY;
 
                 // uint8_t start_x = (p1.x.as_i() > 128) ? 16 : 128;
                 // uint8_t start_y = (p1.y.as_i() > 120) ? 16 : 120;
@@ -607,7 +613,8 @@ void update_state_gameplay()
 
         for (uint8_t i = 0; i < NUM_ENTITIES; ++i)
         {
-            if (ActiveEntities[i].cur_state != Entity_States::UNUSED)
+            if (ActiveEntities[i].cur_state != Entity_States::UNUSED 
+                && ActiveEntities[i].type == ENTITY_TYPE_ENEMY)
             {
                 oam_clear();
                 oam_meta_spr(ActiveEntities[i].x.as_i(), ActiveEntities[i].y.as_i(), metaspr_box_16_16_data);

@@ -29,6 +29,13 @@ enum Entity_States
     ACTIVE = 1,
 };
 
+enum Entity_Types
+{
+    ENTITY_TYPE_NONE = 0,
+    ENTITY_TYPE_ENEMY = 1,
+    ENTITY_TYPE_AMMO = 2,
+};
+
 // Generic entity class for physical objects in the world.
 class Entity
 {
@@ -43,6 +50,7 @@ public:
     fs8_8 vel_y = 0;
 
     Entity_States cur_state = Entity_States::UNUSED;
+    Entity_Types type = ENTITY_TYPE_NONE;
 
     uint8_t anim_counter = 0;
     uint8_t anim_frame = 0;
